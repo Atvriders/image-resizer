@@ -264,6 +264,10 @@
     /* ── Spinner ─────────────────────── */
     .spin { display: none; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: rot 0.6s linear infinite; }
     @keyframes rot { to { transform: rotate(360deg); } }
+    @keyframes pop-in { 0% { transform: scale(0); opacity: 0; } 70% { transform: scale(1.3); } 100% { transform: scale(1); opacity: 1; } }
+    .check-pop { animation: pop-in 0.35s cubic-bezier(.175,.885,.32,1.275) forwards; }
+    .status-spin { width: 16px; height: 16px; border: 2px solid var(--border2); border-top-color: var(--primary); border-radius: 50%; animation: rot 0.65s linear infinite; display: inline-block; flex-shrink: 0; }
+    .ready-bar { border-color: rgba(16,185,129,0.5) !important; background: rgba(16,185,129,0.06) !important; transition: border-color 0.3s, background 0.3s; }
     .loading .lbl { display: none; }
     .loading .spin { display: inline-block; }
 
@@ -326,6 +330,7 @@
               <span class="tag" id="fbFmt"></span>
             </div>
           </div>
+          <span id="imgStatusIcon"></span>
           <button class="btn btn-ghost btn-sm" onclick="fileInput.click()" title="Change image"><i class="bi bi-arrow-repeat"></i></button>
         </div>
 
@@ -659,7 +664,7 @@
         <input type="file" id="videoInput" accept="video/*,.mkv,.flv,.wmv,.avi,.ogv,.mpeg,.mpg" style="display:none"/>
 
         <div id="videoFileBar" style="display:none; align-items:center; gap:0.6rem; margin-bottom:0.75rem; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:0.5rem 0.75rem;">
-          <i class="bi bi-camera-video-fill" style="color:var(--primary); font-size:1.2rem;"></i>
+          <span id="vgStatusIcon"><div class="status-spin"></div></span>
           <div style="flex:1; min-width:0;">
             <div id="videoFileName" style="font-weight:600; font-size:0.82rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
             <div id="videoFileSize" style="font-size:0.72rem; color:var(--muted);"></div>
@@ -957,6 +962,8 @@ async function handleFile(file) {
     fbDims.textContent = `${data.width} × ${data.height}`;
     fbSize.textContent = data.size_human;
     fbFmt.textContent = data.format;
+    document.getElementById('imgStatusIcon').innerHTML =
+      '<i class="bi bi-check-circle-fill check-pop" style="color:var(--success); font-size:1.1rem;"></i>';
     fileBar.style.display = 'flex';
 
     // Update preview
@@ -1548,9 +1555,13 @@ async function setVideoFile(file) {
   videoFile = file;
   document.getElementById('videoFileName').textContent = file.name;
   document.getElementById('videoFileSize').textContent = humanSize(file.size);
-  document.getElementById('videoFileBar').style.display = 'flex';
+  // Show bar immediately with spinner
+  const bar = document.getElementById('videoFileBar');
+  bar.style.display = 'flex';
+  bar.classList.remove('ready-bar');
+  document.getElementById('vgStatusIcon').innerHTML = '<div class="status-spin"></div>';
   document.getElementById('videoDrop').style.display = 'none';
-  document.getElementById('videogifBtn').disabled = false;
+  document.getElementById('videogifBtn').disabled = true;
   showErr(document.getElementById('videogifErr'), '');
 
   // Detect dimensions and auto-fill fields
@@ -1565,10 +1576,15 @@ async function setVideoFile(file) {
   document.getElementById('vgResPreset').value = '0';
   document.getElementById('vgWidth').style.display = 'none';
   if (w) {
-    // Update the "Original" option label with actual dimensions
     document.querySelector('#vgResPreset option[value="0"]').textContent =
       `Original (${w} × ${h})`;
   }
+
+  // Show checkmark + ready state
+  document.getElementById('vgStatusIcon').innerHTML =
+    '<i class="bi bi-check-circle-fill check-pop" style="color:var(--success); font-size:1.15rem;"></i>';
+  bar.classList.add('ready-bar');
+  document.getElementById('videogifBtn').disabled = false;
 }
 
 function humanSize(n) {
