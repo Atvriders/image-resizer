@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libwebp-dev \
     libtiff-dev \
     curl \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python deps (cached layer)

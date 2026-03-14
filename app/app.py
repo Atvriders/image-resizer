@@ -1,5 +1,8 @@
 import io
 import os
+import subprocess
+import shutil
+import tempfile
 from flask import Flask, request, jsonify, render_template, Response
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps, UnidentifiedImageError
 from werkzeug.utils import secure_filename
@@ -10,6 +13,7 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = None
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'tiff', 'tif'}
+ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'wmv', 'm4v', 'ogv', 'mpeg', 'mpg'}
 
 RESAMPLE_MAP = {
     'LANCZOS': Image.Resampling.LANCZOS,
@@ -343,6 +347,78 @@ def convert():
         return make_response(img, fmt, quality, base, 'converted')
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/video-to-gif', methods=['POST'])
+def video_to_gif():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    file = request.files['file']
+    if not file or not file.filename:
+        return jsonify({'error': 'No file selected'}), 400
+
+    ext = file.filename.rsplit('.', 1)[-1].lower()
+    if ext not in ALLOWED_VIDEO_EXTENSIONS:
+        return jsonify({'error': f'Unsupported video format. Supported: {", ".join(sorted(ALLOWED_VIDEO_EXTENSIONS))}'}), 400
+
+    if not shutil.which('ffmpeg'):
+        return jsonify({'error': 'ffmpeg is not installed on the server'}), 500
+
+    start   = max(0, float(request.form.get('start', 0)))
+    duration = min(max(0.1, float(request.form.get('duration', 5))), 60)
+    fps     = min(max(1, int(request.form.get('fps', 10))), 30)
+    width   = min(max(50, int(request.form.get('width', 480))), 1920)
+    loop    = int(request.form.get('loop', 0))   # 0=infinite, -1=once, n=n times
+
+    tmpdir = tempfile.mkdtemp()
+    try:
+        in_path  = os.path.join(tmpdir, f'input.{ext}')
+        out_path = os.path.join(tmpdir, 'output.gif')
+        file.save(in_path)
+
+        # High-quality GIF via palette trick
+        vf = (
+            f"fps={fps},"
+            f"scale={width}:-2:flags=lanczos,"
+            f"split[s0][s1];"
+            f"[s0]palettegen=max_colors=256:stats_mode=diff[p];"
+            f"[s1][p]paletteuse=dither=bayer:bayer_scale=5"
+        )
+        cmd = ['ffmpeg', '-y', '-ss', str(start), '-i', in_path,
+               '-t', str(duration), '-vf', vf, '-loop', str(loop), out_path]
+
+        result = subprocess.run(cmd, capture_output=True, timeout=300)
+        if result.returncode != 0:
+            err = result.stderr.decode(errors='replace')
+            # Return last 400 chars of stderr for diagnosis
+            return jsonify({'error': 'FFmpeg error: ' + err[-400:].strip()}), 500
+
+        with open(out_path, 'rb') as f:
+            gif_data = f.read()
+
+        # Get GIF dimensions
+        gif_img = Image.open(io.BytesIO(gif_data))
+        gw, gh = gif_img.size
+
+        base = os.path.splitext(secure_filename(file.filename))[0] or 'video'
+        resp = Response(gif_data, mimetype='image/gif')
+        resp.headers['Content-Disposition'] = f'attachment; filename="{base}.gif"'
+        resp.headers['X-Image-Width']      = str(gw)
+        resp.headers['X-Image-Height']     = str(gh)
+        resp.headers['X-Image-Size']       = str(len(gif_data))
+        resp.headers['X-Image-Size-Human'] = human_size(len(gif_data))
+        resp.headers['X-Image-Format']     = 'GIF'
+        resp.headers['Access-Control-Expose-Headers'] = (
+            'X-Image-Width,X-Image-Height,X-Image-Size,X-Image-Size-Human,X-Image-Format,Content-Disposition'
+        )
+        return resp
+
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Conversion timed out (max 5 min)'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 if __name__ == '__main__':

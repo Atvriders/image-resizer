@@ -352,6 +352,7 @@
         <button class="tab-btn" data-tab="effects"><i class="bi bi-magic"></i>Effects</button>
         <button class="tab-btn" data-tab="optimize"><i class="bi bi-speedometer2"></i>Optimize</button>
         <button class="tab-btn" data-tab="convert"><i class="bi bi-arrow-left-right"></i>Convert</button>
+        <button class="tab-btn" data-tab="videogif"><i class="bi bi-film"></i>Video→GIF</button>
       </div>
 
       <!-- ─── RESIZE ─────────────────────── -->
@@ -646,6 +647,69 @@
           <span class="spin"></span>
         </button>
       </div>
+
+      <!-- ─── VIDEO→GIF ───────────────────── -->
+      <div class="tab-pane" id="pane-videogif">
+        <!-- Video drop zone -->
+        <div id="videoDrop" onclick="videoInput.click()" style="border:2px dashed var(--border2); border-radius:8px; padding:1.25rem 1rem; text-align:center; cursor:pointer; background:var(--bg3); transition:all 0.2s; margin-bottom:0.75rem;">
+          <i class="bi bi-camera-video" style="font-size:1.8rem; color:var(--muted); display:block; margin-bottom:0.4rem;"></i>
+          <div style="font-weight:600; font-size:0.85rem; color:var(--text);">Click or drag & drop a video</div>
+          <div style="font-size:0.72rem; color:var(--muted); margin-top:0.2rem;">MP4 · MOV · AVI · MKV · WEBM · FLV · WMV · M4V</div>
+        </div>
+        <input type="file" id="videoInput" accept="video/*,.mkv,.flv,.wmv,.avi,.ogv,.mpeg,.mpg" style="display:none"/>
+
+        <div id="videoFileBar" style="display:none; align-items:center; gap:0.6rem; margin-bottom:0.75rem; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:0.5rem 0.75rem;">
+          <i class="bi bi-camera-video-fill" style="color:var(--primary); font-size:1.2rem;"></i>
+          <div style="flex:1; min-width:0;">
+            <div id="videoFileName" style="font-weight:600; font-size:0.82rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+            <div id="videoFileSize" style="font-size:0.72rem; color:var(--muted);"></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="videoInput.click()"><i class="bi bi-arrow-repeat"></i></button>
+        </div>
+
+        <div class="sec mb1">Conversion Settings</div>
+        <div class="row2 mb2">
+          <div>
+            <label class="lbl">Start Time (sec)</label>
+            <input type="number" id="vgStart" min="0" step="0.5" value="0"/>
+          </div>
+          <div>
+            <label class="lbl">Duration (sec, max 60)</label>
+            <input type="number" id="vgDuration" min="0.5" max="60" step="0.5" value="5"/>
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <div class="shead"><span>Frame Rate (FPS)</span><span class="slider-val" id="vgFpsV">10</span></div>
+          <input type="range" id="vgFps" min="1" max="30" step="1" value="10"/>
+          <div style="display:flex; justify-content:space-between; font-size:0.68rem; color:var(--muted);"><span>Smaller file</span><span>Smoother</span></div>
+        </div>
+
+        <div class="row2 mb2">
+          <div>
+            <label class="lbl">Width (px)</label>
+            <input type="number" id="vgWidth" min="50" max="1920" step="10" value="480"/>
+          </div>
+          <div>
+            <label class="lbl">Loop</label>
+            <select id="vgLoop">
+              <option value="0">Infinite</option>
+              <option value="-1">Play once</option>
+              <option value="2">2×</option>
+              <option value="3">3×</option>
+              <option value="5">5×</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="err-box" id="videogifErr"></div>
+        <button class="btn btn-primary w100" id="videogifBtn" disabled>
+          <span class="lbl"><i class="bi bi-film"></i>Convert to GIF</span>
+          <span class="spin"></span>
+        </button>
+        <div style="font-size:0.7rem; color:var(--muted); margin-top:0.4rem; text-align:center;">Large videos may take a moment to process</div>
+      </div>
+
     </div>
   </div>
 
@@ -1415,6 +1479,105 @@ async function applyResult(res) {
   dlBtn.style.display = 'flex'; resultPanel.style.display = 'block';
   resetEffectSliders();
 }
+
+// ═══════════════════════════════════════════════
+// VIDEO → GIF
+// ═══════════════════════════════════════════════
+let videoFile = null;
+
+const videoDrop = document.getElementById('videoDrop');
+const videoInput = document.getElementById('videoInput');
+
+videoDrop.addEventListener('dragover', e => { e.preventDefault(); videoDrop.style.borderColor = 'var(--primary)'; });
+videoDrop.addEventListener('dragleave', () => videoDrop.style.borderColor = '');
+videoDrop.addEventListener('drop', e => {
+  e.preventDefault(); videoDrop.style.borderColor = '';
+  if (e.dataTransfer.files[0]) setVideoFile(e.dataTransfer.files[0]);
+});
+videoInput.addEventListener('change', () => { if (videoInput.files[0]) setVideoFile(videoInput.files[0]); });
+
+function setVideoFile(file) {
+  videoFile = file;
+  document.getElementById('videoFileName').textContent = file.name;
+  document.getElementById('videoFileSize').textContent = humanSize(file.size);
+  document.getElementById('videoFileBar').style.display = 'flex';
+  videoDrop.style.display = 'none';
+  document.getElementById('videogifBtn').disabled = false;
+  showErr(document.getElementById('videogifErr'), '');
+}
+
+function humanSize(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n/1024).toFixed(1) + ' KB';
+  return (n/1048576).toFixed(2) + ' MB';
+}
+
+document.getElementById('vgFps').addEventListener('input', function() {
+  document.getElementById('vgFpsV').textContent = this.value;
+});
+
+document.getElementById('videogifBtn').addEventListener('click', async () => {
+  if (!videoFile) return;
+  const btn = document.getElementById('videogifBtn');
+  const err = document.getElementById('videogifErr');
+  showErr(err, '');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  const fd = new FormData();
+  fd.append('file', videoFile);
+  fd.append('start',    document.getElementById('vgStart').value);
+  fd.append('duration', document.getElementById('vgDuration').value);
+  fd.append('fps',      document.getElementById('vgFps').value);
+  fd.append('width',    document.getElementById('vgWidth').value);
+  fd.append('loop',     document.getElementById('vgLoop').value);
+
+  try {
+    const res = await fetch('/video-to-gif', { method: 'POST', body: fd });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      showErr(err, j.error || 'Conversion failed');
+      return;
+    }
+
+    const blob = await res.blob();
+    const w   = parseInt(res.headers.get('X-Image-Width') || 0);
+    const h   = parseInt(res.headers.get('X-Image-Height') || 0);
+    const sz  = res.headers.get('X-Image-Size-Human') || '';
+    const disp = res.headers.get('Content-Disposition') || '';
+    const fnm  = (disp.match(/filename="?([^"]+)"?/) || [])[1] || 'output.gif';
+
+    if (resultBlobURL) URL.revokeObjectURL(resultBlobURL);
+    if (curPreviewURL) URL.revokeObjectURL(curPreviewURL);
+    resultBlobURL = URL.createObjectURL(blob);
+    curPreviewURL = URL.createObjectURL(blob);
+
+    // Make the GIF available as the working image for further editing
+    currentFile = new File([blob], fnm, { type: 'image/gif' });
+    curW = w || curW; curH = h || curH; curFmt = 'GIF';
+    updateWorkStrip(); rW.value = curW; rH.value = curH; updatePctPreview();
+
+    // Show in input panel
+    showInputPreview(curPreviewURL, curW, curH, sz, 'GIF');
+
+    // Show result
+    const rImg = document.createElement('img');
+    rImg.src = resultBlobURL; rImg.alt = 'GIF result';
+    resultPrevWrap.innerHTML = ''; resultPrevWrap.appendChild(rImg);
+    resultMeta.innerHTML = makeTags(w, h, sz, 'GIF');
+    dlBtn.href = resultBlobURL; dlBtn.download = fnm; dlFmt.textContent = 'GIF';
+    dlBtn.style.display = 'flex'; resultPanel.style.display = 'block';
+
+    // Enable image tools so the GIF can be further edited
+    toolsPanel.style.display = 'block';
+    enableAllBtns(true);
+    workStrip.style.display = 'flex';
+
+  } catch (e) {
+    showErr(err, 'Network error: ' + e.message);
+  } finally {
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+});
 </script>
 </body>
 </html>
