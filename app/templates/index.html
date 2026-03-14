@@ -1,467 +1,1420 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Image Resizer</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Image Studio</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
   <style>
-    body { background: #f8f9fa; }
-    .navbar-brand { font-weight: 700; letter-spacing: -0.5px; }
+    :root {
+      --primary: #6366f1;
+      --primary-h: #4f46e5;
+      --bg: #0f1117;
+      --bg2: #1a1d27;
+      --bg3: #23263a;
+      --card: #1e2130;
+      --border: #2d3148;
+      --border2: #3d4168;
+      --text: #e2e8f0;
+      --muted: #8892b0;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warn: #f59e0b;
+      --radius: 10px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+    }
 
-    /* Dropzone */
-    #dropzone {
-      border: 2.5px dashed #adb5bd;
-      border-radius: 10px;
-      padding: 2.5rem 1rem;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-      background: #fff;
-    }
-    #dropzone:hover, #dropzone.dragover {
-      border-color: #0d6efd;
-      background: #e9f0ff;
-    }
-    #dropzone i { font-size: 2.5rem; color: #6c757d; }
-    #dropzone.dragover i { color: #0d6efd; }
-
-    /* Preview images */
-    .preview-img {
-      max-width: 100%;
-      max-height: 320px;
-      object-fit: contain;
-      border: 1px solid #dee2e6;
-      border-radius: 6px;
-      background: repeating-conic-gradient(#e0e0e0 0% 25%, #fff 0% 50%) 0 0 / 16px 16px;
-    }
-    .preview-box {
-      min-height: 180px;
+    /* ── Nav ─────────────────────────── */
+    .nav {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.25rem;
+      height: 52px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      background: #f1f3f5;
-      border: 1px solid #dee2e6;
-      border-radius: 6px;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
-    .preview-box .placeholder-text {
-      color: #adb5bd;
-      font-size: 0.9rem;
+    .nav-brand {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-weight: 700; font-size: 1.05rem; color: var(--text);
+      text-decoration: none;
     }
+    .nav-brand .icon-wrap {
+      width: 30px; height: 30px; background: var(--primary);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    }
+    .nav-brand .icon-wrap i { font-size: 1rem; color: #fff; }
+    .nav-tag { font-size: 0.72rem; color: var(--muted); }
 
-    /* Aspect lock button */
-    #aspectLockBtn { width: 38px; min-width: 38px; }
-    #aspectLockBtn.locked { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+    /* ── Layout ──────────────────────── */
+    main { display: grid; grid-template-columns: 380px 1fr; gap: 1rem; padding: 1rem; max-width: 1500px; margin: 0 auto; }
+    @media (max-width: 960px) { main { grid-template-columns: 1fr; } }
 
-    /* Info badges */
-    .info-badge { font-size: 0.78rem; }
+    /* ── Panel ───────────────────────── */
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .panel-head {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .panel-head i { color: var(--primary); }
+    .panel-body { padding: 1rem; }
 
-    /* Spinner overlay on button */
-    .btn-spinner { display: none; }
-    .loading .btn-spinner { display: inline-block; }
-    .loading .btn-label { display: none; }
+    /* ── Upload zone ─────────────────── */
+    #dropzone {
+      border: 2px dashed var(--border2);
+      border-radius: 8px;
+      padding: 2rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--bg3);
+    }
+    #dropzone:hover, #dropzone.over {
+      border-color: var(--primary);
+      background: rgba(99,102,241,0.08);
+    }
+    #dropzone .dz-icon { font-size: 2.2rem; color: var(--muted); display: block; margin-bottom: 0.5rem; transition: color 0.2s; }
+    #dropzone.over .dz-icon { color: var(--primary); }
+    #dropzone .dz-title { font-weight: 600; color: var(--text); }
+    #dropzone .dz-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; }
 
-    .card { border: none; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    /* ── File info bar ───────────────── */
+    #fileBar { display: none; align-items: center; gap: 0.75rem; padding: 0.5rem 0; }
+    #fileBar img { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); background: var(--bg3); }
+    #fileBar .fb-name { font-weight: 600; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tag {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 5px; padding: 0.15rem 0.45rem;
+      font-size: 0.7rem; color: var(--muted); font-weight: 500;
+    }
+    .tag.blue { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.4); color: #a5b4fc; }
+    .tag.green { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: #6ee7b7; }
 
-    /* Range track color */
-    #percentSlider { accent-color: #0d6efd; }
+    /* ── Working-image strip ─────────── */
+    #workStrip {
+      display: none; margin-top: 0.6rem;
+      background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 6px; padding: 0.4rem 0.65rem;
+      font-size: 0.75rem; color: #a5b4fc;
+      align-items: center; gap: 0.4rem;
+    }
+    #workStrip button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.75rem; margin-left: auto; padding: 0; }
+    #workStrip button:hover { color: var(--danger); }
+
+    /* ── Tool tabs ───────────────────── */
+    .tab-bar {
+      display: flex; gap: 1px; padding: 0.5rem 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto; scrollbar-width: none;
+      background: var(--bg2);
+    }
+    .tab-bar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      padding: 0.45rem 0.7rem; border-radius: 6px 6px 0 0;
+      border: 1px solid transparent; border-bottom: none;
+      font-size: 0.75rem; font-weight: 500;
+      color: var(--muted); cursor: pointer; white-space: nowrap;
+      display: flex; align-items: center; gap: 0.3rem;
+      background: transparent; transition: all 0.15s;
+      position: relative; bottom: -1px;
+    }
+    .tab-btn:hover { background: var(--bg3); color: var(--text); }
+    .tab-btn.active {
+      background: var(--card); border-color: var(--border);
+      border-bottom-color: var(--card); color: var(--primary); font-weight: 600;
+    }
+    .tab-pane { display: none; padding: 1rem; }
+    .tab-pane.active { display: block; }
+
+    /* ── Form elements ───────────────── */
+    label.lbl { display: block; font-size: 0.72rem; font-weight: 500; color: var(--muted); margin-bottom: 0.25rem; }
+    input[type=number], input[type=text], select {
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 7px; color: var(--text);
+      padding: 0.45rem 0.6rem; font-size: 0.82rem;
+      width: 100%; transition: border-color 0.15s;
+    }
+    input[type=number]:focus, select:focus {
+      outline: none; border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+    }
+    input[type=range] { width: 100%; accent-color: var(--primary); cursor: pointer; }
+
+    /* ── Mode toggle ─────────────────── */
+    .mode-toggle { display: flex; gap: 2px; background: var(--bg3); border-radius: 8px; padding: 3px; border: 1px solid var(--border); }
+    .mode-toggle input { display: none; }
+    .mode-toggle label {
+      flex: 1; text-align: center; padding: 0.35rem 0.5rem;
+      border-radius: 6px; font-size: 0.75rem; font-weight: 500;
+      color: var(--muted); cursor: pointer; transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 0.3rem;
+    }
+    .mode-toggle input:checked + label { background: var(--card); color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+
+    /* ── Buttons ─────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+      border-radius: 7px; padding: 0.5rem 0.875rem;
+      font-size: 0.8rem; font-weight: 500; cursor: pointer;
+      border: 1px solid transparent; transition: all 0.15s;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-h); }
+    .btn-primary.w100 { width: 100%; }
+    .btn-ghost { background: var(--bg3); color: var(--muted); border-color: var(--border2); }
+    .btn-ghost:hover { background: var(--bg2); color: var(--text); }
+    .btn-ghost.active { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.4); color: #a5b4fc; }
+    .btn-success { background: var(--success); color: #fff; border-color: var(--success); width: 100%; }
+    .btn-success:hover { background: #059669; }
+    .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.72rem; }
+    a.btn-success { text-decoration: none; }
+
+    /* ── Aspect lock ─────────────────── */
+    .lock-btn {
+      width: 34px; height: 34px; flex-shrink: 0; align-self: flex-end; margin-bottom: 1px;
+      background: var(--bg3); border: 1px solid var(--border2);
+      border-radius: 7px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .lock-btn.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+    /* ── Output settings box ─────────── */
+    .out-box { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem; margin-top: 0.75rem; }
+    .out-box-title { font-size: 0.68rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.5rem; }
+
+    /* ── Divider ─────────────────────── */
+    hr { border: none; border-top: 1px solid var(--border); margin: 0.75rem 0; }
+
+    /* ── Section label ───────────────── */
+    .sec { font-size: 0.68rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.4rem; }
+
+    /* ── Slider row ──────────────────── */
+    .slider-row { margin-bottom: 0.75rem; }
+    .slider-row .shead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem; }
+    .slider-row .shead span:first-child { font-size: 0.75rem; color: var(--muted); }
+    .slider-val { font-weight: 600; color: var(--primary); font-size: 0.8rem; }
+
+    /* ── Filter chips ────────────────── */
+    .chip-row { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.75rem; }
+
+    /* ── Rotate grid ─────────────────── */
+    .rot-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin-bottom: 0.75rem; }
+    .flip-row { display: flex; gap: 0.4rem; margin-bottom: 0.75rem; }
+    .flip-row .btn { flex: 1; }
+
+    /* ── Convert format grid ─────────── */
+    .fmt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin-bottom: 0.75rem; }
+    .fmt-btn { flex-direction: column; padding: 0.65rem 0.3rem !important; font-size: 0.7rem !important; gap: 0.2rem !important; }
+    .fmt-btn span { font-size: 1.3rem; }
+
+    /* ── Error ───────────────────────── */
+    .err-box {
+      display: none; margin-top: 0.65rem;
+      background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35);
+      border-radius: 7px; padding: 0.5rem 0.75rem;
+      font-size: 0.77rem; color: #fca5a5;
+    }
+    .err-box.show { display: block; }
+
+    /* ── Preview area ────────────────── */
+    .prev-wrap {
+      min-height: 200px; border-radius: 8px;
+      border: 1px solid var(--border); overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg3); position: relative;
+    }
+    .prev-wrap img {
+      max-width: 100%; max-height: 440px; object-fit: contain;
+      display: block;
+      background: repeating-conic-gradient(#2a2a3a 0% 25%, #1e1e2e 0% 50%) 0 0 / 16px 16px;
+    }
+    .prev-ph { text-align: center; color: var(--muted); padding: 2.5rem 1rem; }
+    .prev-ph i { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; opacity: 0.3; }
+    .prev-ph p { font-size: 0.82rem; }
+
+    /* ── Result meta ─────────────────── */
+    .rmeta { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.65rem; }
+
+    /* ── Crop canvas ─────────────────── */
+    #cropCanvas { display: block; max-width: 100%; cursor: crosshair; border-radius: 6px; }
+
+    /* ── Spinner ─────────────────────── */
+    .spin { display: none; width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: rot 0.6s linear infinite; }
+    @keyframes rot { to { transform: rotate(360deg); } }
+    .loading .lbl { display: none; }
+    .loading .spin { display: inline-block; }
+
+    /* ── Upload progress bar ─────────── */
+    .upbar { display: none; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 0.65rem; }
+    .upbar-fill { height: 100%; background: var(--primary); border-radius: 2px; width: 0; transition: width 0.3s; }
+    .upbar.show { display: block; }
+
+    /* ── Rows/grids ──────────────────── */
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; }
+    .flex { display: flex; align-items: flex-end; gap: 0.5rem; }
+    .flex1 { flex: 1; }
+    .mt1 { margin-top: 0.5rem; }
+    .mt2 { margin-top: 0.75rem; }
+    .mb1 { margin-bottom: 0.5rem; }
+    .mb2 { margin-bottom: 0.75rem; }
+
+    /* ── Progress animation ──────────── */
+    @keyframes pulse-border { 0%,100% { border-color: var(--primary); } 50% { border-color: var(--primary-h); } }
+    .processing { animation: pulse-border 1s ease-in-out infinite; }
   </style>
 </head>
 <body>
-  <nav class="navbar navbar-dark bg-primary mb-4">
-    <div class="container">
-      <span class="navbar-brand"><i class="bi bi-aspect-ratio me-2"></i>Image Resizer</span>
-      <span class="text-white-50 small">Resize images instantly — no upload to third-party servers</span>
+
+<nav class="nav">
+  <a class="nav-brand" href="#">
+    <div class="icon-wrap"><i class="bi bi-layers-fill"></i></div>
+    Image Studio
+  </a>
+  <span class="nav-tag"><i class="bi bi-shield-lock me-1"></i>Private — never uploaded to third-party servers</span>
+</nav>
+
+<main>
+
+  <!-- ═══════════════ LEFT COLUMN ═══════════════ -->
+  <div style="display:flex; flex-direction:column; gap:0.75rem;">
+
+    <!-- Upload Panel -->
+    <div class="panel">
+      <div class="panel-head"><i class="bi bi-upload"></i>Image</div>
+      <div class="panel-body">
+
+        <!-- Dropzone -->
+        <div id="dropzone" onclick="fileInput.click()">
+          <i class="bi bi-cloud-arrow-up dz-icon"></i>
+          <div class="dz-title">Click or drag & drop an image</div>
+          <div class="dz-sub">PNG · JPG · GIF · WEBP · BMP · TIFF &nbsp;·&nbsp; No file size limit</div>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" style="display:none"/>
+
+        <!-- File info (compact after upload) -->
+        <div id="fileBar">
+          <img id="fileThumbnail" src="" alt=""/>
+          <div style="flex:1; min-width:0;">
+            <div class="fb-name" id="fbName"></div>
+            <div style="display:flex; flex-wrap:wrap; gap:0.3rem; margin-top:0.3rem;">
+              <span class="tag blue" id="fbDims"></span>
+              <span class="tag" id="fbSize"></span>
+              <span class="tag" id="fbFmt"></span>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="fileInput.click()" title="Change image"><i class="bi bi-arrow-repeat"></i></button>
+        </div>
+
+        <!-- Upload progress bar -->
+        <div class="upbar" id="upbar"><div class="upbar-fill" id="upbarFill"></div></div>
+        <div class="err-box" id="uploadErr"></div>
+
+        <!-- Working image strip -->
+        <div id="workStrip" style="display:flex;">
+          <i class="bi bi-layers"></i>
+          <span id="workInfo">Working on: original</span>
+          <button onclick="resetToOriginal()" title="Reset to original image"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
+        </div>
+
+      </div>
     </div>
-  </nav>
 
-  <div class="container pb-5">
-    <div class="row g-4">
-
-      <!-- LEFT: Controls -->
-      <div class="col-lg-5">
-
-        <!-- Upload Card -->
-        <div class="card mb-3">
-          <div class="card-body">
-            <h6 class="card-title mb-3"><i class="bi bi-upload me-1"></i>Upload Image</h6>
-            <div id="dropzone" onclick="document.getElementById('fileInput').click()">
-              <i class="bi bi-image mb-2 d-block"></i>
-              <div class="fw-semibold">Click or drag & drop an image here</div>
-              <div class="text-muted small mt-1">PNG, JPG, GIF, WEBP, BMP, TIFF — up to 50 MB</div>
-            </div>
-            <input type="file" id="fileInput" accept="image/*" class="d-none" />
-
-            <!-- File info -->
-            <div id="fileInfo" class="mt-3 d-none">
-              <div class="d-flex flex-wrap gap-2 align-items-center">
-                <span class="badge bg-secondary info-badge" id="badgeDims">—</span>
-                <span class="badge bg-secondary info-badge" id="badgeSize">—</span>
-                <span class="badge bg-secondary info-badge" id="badgeFormat">—</span>
-                <span class="badge bg-secondary info-badge" id="badgeMode">—</span>
-              </div>
-              <div class="mt-1 text-muted small text-truncate" id="fileNameLabel"></div>
-            </div>
-
-            <div id="uploadProgress" class="mt-2 d-none">
-              <div class="d-flex align-items-center gap-2 text-primary small">
-                <div class="spinner-border spinner-border-sm"></div>
-                Uploading…
-              </div>
-            </div>
-            <div id="uploadError" class="alert alert-danger mt-2 py-2 d-none small"></div>
-          </div>
-        </div>
-
-        <!-- Resize Options Card -->
-        <div class="card mb-3" id="resizeCard">
-          <div class="card-body">
-            <h6 class="card-title mb-3"><i class="bi bi-sliders me-1"></i>Resize Options</h6>
-
-            <!-- Mode toggle -->
-            <div class="mb-3">
-              <div class="btn-group w-100" role="group">
-                <input type="radio" class="btn-check" name="resizeMode" id="modePixels" value="pixels" checked />
-                <label class="btn btn-outline-primary btn-sm" for="modePixels">
-                  <i class="bi bi-bounding-box me-1"></i>Pixels
-                </label>
-                <input type="radio" class="btn-check" name="resizeMode" id="modePercent" value="percent" />
-                <label class="btn btn-outline-primary btn-sm" for="modePercent">
-                  <i class="bi bi-percent me-1"></i>Percentage
-                </label>
-              </div>
-            </div>
-
-            <!-- Pixel inputs -->
-            <div id="pixelInputs">
-              <div class="d-flex align-items-center gap-2 mb-2">
-                <div class="flex-fill">
-                  <label class="form-label small mb-1">Width (px)</label>
-                  <input type="number" id="widthInput" class="form-control form-control-sm" min="1" max="99999" placeholder="Width" />
-                </div>
-                <div class="mt-4 pt-1">
-                  <button type="button" id="aspectLockBtn" class="btn btn-outline-secondary btn-sm locked" title="Lock aspect ratio">
-                    <i class="bi bi-link-45deg" id="lockIcon"></i>
-                  </button>
-                </div>
-                <div class="flex-fill">
-                  <label class="form-label small mb-1">Height (px)</label>
-                  <input type="number" id="heightInput" class="form-control form-control-sm" min="1" max="99999" placeholder="Height" />
-                </div>
-              </div>
-            </div>
-
-            <!-- Percent inputs -->
-            <div id="percentInputs" class="d-none">
-              <label class="form-label small mb-1">Scale: <span id="percentDisplay" class="fw-bold">100</span>%</label>
-              <input type="range" id="percentSlider" class="form-range" min="1" max="500" step="1" value="100" />
-              <div class="d-flex gap-2 align-items-center mt-1">
-                <input type="number" id="percentNumber" class="form-control form-control-sm" style="width:90px" min="1" max="500" value="100" />
-                <span class="text-muted small">% of original size</span>
-              </div>
-              <div id="percentPreview" class="text-muted small mt-1"></div>
-            </div>
-
-            <!-- Resampling -->
-            <div class="mb-3 mt-3">
-              <label class="form-label small mb-1">Resampling Method</label>
-              <select id="resampleSelect" class="form-select form-select-sm">
-                <option value="LANCZOS" selected>Lanczos — Best quality (slower)</option>
-                <option value="BICUBIC">Bicubic — Good quality</option>
-                <option value="BILINEAR">Bilinear — Moderate quality (faster)</option>
-                <option value="NEAREST">Nearest Neighbor — Fast (pixel art)</option>
-              </select>
-            </div>
-
-            <!-- Resize button -->
-            <button type="button" id="resizeBtn" class="btn btn-primary w-100" disabled>
-              <span class="btn-label"><i class="bi bi-arrows-angle-contract me-1"></i>Resize Image</span>
-              <span class="btn-spinner spinner-border spinner-border-sm"></span>
-            </button>
-
-            <div id="resizeError" class="alert alert-danger mt-2 py-2 d-none small"></div>
-          </div>
-        </div>
+    <!-- Tools Panel (hidden until upload) -->
+    <div class="panel" id="toolsPanel" style="display:none;">
+      <div class="tab-bar" id="tabBar">
+        <button class="tab-btn active" data-tab="resize"><i class="bi bi-arrows-angle-expand"></i>Resize</button>
+        <button class="tab-btn" data-tab="crop"><i class="bi bi-crop"></i>Crop</button>
+        <button class="tab-btn" data-tab="rotate"><i class="bi bi-arrow-clockwise"></i>Rotate</button>
+        <button class="tab-btn" data-tab="effects"><i class="bi bi-magic"></i>Effects</button>
+        <button class="tab-btn" data-tab="optimize"><i class="bi bi-speedometer2"></i>Optimize</button>
+        <button class="tab-btn" data-tab="convert"><i class="bi bi-arrow-left-right"></i>Convert</button>
       </div>
 
-      <!-- RIGHT: Previews -->
-      <div class="col-lg-7">
-
-        <!-- Original Preview -->
-        <div class="card mb-3">
-          <div class="card-body">
-            <h6 class="card-title mb-2"><i class="bi bi-image me-1"></i>Original</h6>
-            <div id="originalBox" class="preview-box">
-              <span class="placeholder-text">Upload an image to preview</span>
-            </div>
-            <div id="originalMeta" class="mt-2 text-muted small d-none"></div>
-          </div>
+      <!-- ─── RESIZE ─────────────────────── -->
+      <div class="tab-pane active" id="pane-resize">
+        <div class="mode-toggle mb2">
+          <input type="radio" name="rmode" id="rPx" value="pixels" checked/>
+          <label for="rPx"><i class="bi bi-bounding-box"></i>Pixels</label>
+          <input type="radio" name="rmode" id="rPct" value="percent"/>
+          <label for="rPct"><i class="bi bi-percent"></i>Percentage</label>
         </div>
 
-        <!-- Resized Preview -->
-        <div class="card">
-          <div class="card-body">
-            <h6 class="card-title mb-2"><i class="bi bi-aspect-ratio me-1"></i>Resized Preview</h6>
-            <div id="resizedBox" class="preview-box">
-              <span class="placeholder-text">Resized image will appear here</span>
+        <div id="pxInputs">
+          <div class="flex mb2">
+            <div class="flex1">
+              <label class="lbl">Width (px)</label>
+              <input type="number" id="rW" min="1" max="99999" placeholder="Width"/>
             </div>
-            <div id="resizedMeta" class="mt-2 text-muted small d-none"></div>
-
-            <div class="mt-3 d-none" id="downloadSection">
-              <a id="downloadLink" href="#" class="btn btn-success w-100">
-                <i class="bi bi-download me-1"></i>Download Resized Image
-              </a>
+            <button class="lock-btn on" id="lockBtn" title="Aspect ratio locked"><i class="bi bi-link-45deg" id="lockIcon"></i></button>
+            <div class="flex1">
+              <label class="lbl">Height (px)</label>
+              <input type="number" id="rH" min="1" max="99999" placeholder="Height"/>
             </div>
           </div>
         </div>
 
+        <div id="pctInputs" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center;" class="mb1">
+            <label class="lbl" style="margin:0;">Scale</label>
+            <span class="slider-val" id="pctDisplay">100%</span>
+          </div>
+          <input type="range" id="pctSlider" min="1" max="500" step="1" value="100" class="mb1"/>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <input type="number" id="pctNum" min="1" max="500" value="100" style="width:80px;"/>
+            <span style="font-size:0.75rem; color:var(--muted);" id="pctPrev"></span>
+          </div>
+        </div>
+
+        <hr/>
+        <label class="lbl">Resampling Method</label>
+        <select id="resample" class="mb2">
+          <option value="LANCZOS">Lanczos — Best quality (recommended)</option>
+          <option value="BICUBIC">Bicubic — Good quality, faster</option>
+          <option value="BILINEAR">Bilinear — Moderate quality</option>
+          <option value="BOX">Box — Good for downscaling</option>
+          <option value="NEAREST">Nearest Neighbor — Pixel art</option>
+        </select>
+
+        <div class="out-box">
+          <div class="out-box-title">Output</div>
+          <div class="row2">
+            <div>
+              <label class="lbl">Format</label>
+              <select id="rFmt">
+                <option value="auto">Auto (keep original)</option>
+                <option value="JPEG">JPEG</option>
+                <option value="PNG">PNG</option>
+                <option value="WEBP">WEBP</option>
+                <option value="GIF">GIF</option>
+                <option value="BMP">BMP</option>
+                <option value="TIFF">TIFF</option>
+              </select>
+            </div>
+            <div>
+              <label class="lbl">Quality: <span id="rQv">90</span>%</label>
+              <input type="range" id="rQ" min="1" max="100" value="90"/>
+            </div>
+          </div>
+        </div>
+
+        <div class="err-box" id="resizeErr"></div>
+        <button class="btn btn-primary w100 mt2" id="resizeBtn" disabled>
+          <span class="lbl"><i class="bi bi-arrows-angle-contract"></i>Resize Image</span>
+          <span class="spin"></span>
+        </button>
+      </div>
+
+      <!-- ─── CROP ───────────────────────── -->
+      <div class="tab-pane" id="pane-crop">
+        <div class="sec mb1">Crop Region</div>
+        <div class="row2 mb2">
+          <div><label class="lbl">X (left)</label><input type="number" id="cX" min="0" value="0"/></div>
+          <div><label class="lbl">Y (top)</label><input type="number" id="cY" min="0" value="0"/></div>
+          <div><label class="lbl">Width</label><input type="number" id="cW" min="1" value="100"/></div>
+          <div><label class="lbl">Height</label><input type="number" id="cH" min="1" value="100"/></div>
+        </div>
+
+        <div class="sec mb1">Aspect Ratio Presets</div>
+        <div class="chip-row mb2" id="cropPresets">
+          <button class="btn btn-ghost btn-sm crop-pre" data-r="0">Free</button>
+          <button class="btn btn-ghost btn-sm crop-pre" data-r="1">1:1</button>
+          <button class="btn btn-ghost btn-sm crop-pre" data-r="1.3333">4:3</button>
+          <button class="btn btn-ghost btn-sm crop-pre" data-r="1.7778">16:9</button>
+          <button class="btn btn-ghost btn-sm crop-pre" data-r="0.75">3:4</button>
+          <button class="btn btn-ghost btn-sm crop-pre" data-r="0.5625">9:16</button>
+          <button class="btn btn-ghost btn-sm crop-pre" data-r="1.5">3:2</button>
+        </div>
+
+        <div style="display:flex; gap:0.4rem; margin-bottom:0.75rem;">
+          <button class="btn btn-ghost btn-sm" onclick="cropSelectAll()" style="flex:1;"><i class="bi bi-fullscreen"></i> Select All</button>
+          <button class="btn btn-ghost btn-sm" onclick="cropCenter()" style="flex:1;"><i class="bi bi-arrows-move"></i> Center Square</button>
+        </div>
+
+        <div class="out-box">
+          <div class="out-box-title">Output</div>
+          <div class="row2">
+            <div><label class="lbl">Format</label>
+              <select id="cFmt">
+                <option value="auto">Auto</option>
+                <option value="JPEG">JPEG</option>
+                <option value="PNG">PNG</option>
+                <option value="WEBP">WEBP</option>
+              </select>
+            </div>
+            <div><label class="lbl">Quality: <span id="cQv">90</span>%</label>
+              <input type="range" id="cQ" min="1" max="100" value="90"/>
+            </div>
+          </div>
+        </div>
+
+        <div class="err-box" id="cropErr"></div>
+        <button class="btn btn-primary w100 mt2" id="cropBtn" disabled>
+          <span class="lbl"><i class="bi bi-crop"></i>Crop Image</span>
+          <span class="spin"></span>
+        </button>
+      </div>
+
+      <!-- ─── ROTATE ─────────────────────── -->
+      <div class="tab-pane" id="pane-rotate">
+        <div class="sec mb1">Rotate</div>
+        <div class="rot-grid">
+          <button class="btn btn-ghost" onclick="doRotate('rotate',-90)"><i class="bi bi-arrow-counterclockwise"></i>90° CCW</button>
+          <button class="btn btn-ghost" onclick="doRotate('rotate',180)"><i class="bi bi-arrow-repeat"></i>180°</button>
+          <button class="btn btn-ghost" onclick="doRotate('rotate',90)"><i class="bi bi-arrow-clockwise"></i>90° CW</button>
+        </div>
+
+        <div class="sec mb1">Flip</div>
+        <div class="flip-row">
+          <button class="btn btn-ghost" onclick="doRotate('flip_h')"><i class="bi bi-symmetry-vertical"></i>Horizontal</button>
+          <button class="btn btn-ghost" onclick="doRotate('flip_v')"><i class="bi bi-symmetry-horizontal"></i>Vertical</button>
+        </div>
+
+        <div class="sec mb1">Custom Angle</div>
+        <div class="flex mb2">
+          <div class="flex1"><label class="lbl">Degrees</label><input type="number" id="customAngle" min="-360" max="360" step="0.5" value="45"/></div>
+          <div><label class="lbl">Expand</label>
+            <select id="expandSel" style="width:auto;">
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost" onclick="doRotate('rotate',null,true)" style="align-self:flex-end;"><i class="bi bi-play-fill"></i></button>
+        </div>
+
+        <div class="out-box">
+          <div class="out-box-title">Output</div>
+          <div class="row2">
+            <div><label class="lbl">Format</label>
+              <select id="rotFmt">
+                <option value="auto">Auto</option>
+                <option value="JPEG">JPEG</option>
+                <option value="PNG">PNG</option>
+                <option value="WEBP">WEBP</option>
+              </select>
+            </div>
+            <div><label class="lbl">Quality: <span id="rotQv">90</span>%</label>
+              <input type="range" id="rotQ" min="1" max="100" value="90"/>
+            </div>
+          </div>
+        </div>
+        <div class="err-box" id="rotateErr"></div>
+      </div>
+
+      <!-- ─── EFFECTS ────────────────────── -->
+      <div class="tab-pane" id="pane-effects">
+        <div class="sec mb1">Adjustments <span style="font-size:0.65rem; font-weight:400; color:var(--muted); text-transform:none; letter-spacing:0;">(live preview below)</span></div>
+
+        <div class="slider-row">
+          <div class="shead"><span><i class="bi bi-sun me-1"></i>Brightness</span><span class="slider-val" id="brtV">1.0</span></div>
+          <input type="range" id="brt" min="0" max="3" step="0.05" value="1"/>
+        </div>
+        <div class="slider-row">
+          <div class="shead"><span><i class="bi bi-circle-half me-1"></i>Contrast</span><span class="slider-val" id="conV">1.0</span></div>
+          <input type="range" id="con" min="0" max="3" step="0.05" value="1"/>
+        </div>
+        <div class="slider-row">
+          <div class="shead"><span><i class="bi bi-droplet-half me-1"></i>Saturation</span><span class="slider-val" id="satV">1.0</span></div>
+          <input type="range" id="sat" min="0" max="3" step="0.05" value="1"/>
+        </div>
+        <div class="slider-row">
+          <div class="shead"><span><i class="bi bi-diamond me-1"></i>Sharpness</span><span class="slider-val" id="shrV">1.0</span></div>
+          <input type="range" id="shr" min="0" max="3" step="0.05" value="1"/>
+        </div>
+
+        <hr/>
+        <div class="sec mb1">Filters</div>
+        <div class="chip-row">
+          <button class="btn btn-ghost btn-sm flt-btn active" data-f="none">None</button>
+          <button class="btn btn-ghost btn-sm flt-btn" data-f="grayscale">Grayscale</button>
+          <button class="btn btn-ghost btn-sm flt-btn" data-f="sepia">Sepia</button>
+          <button class="btn btn-ghost btn-sm flt-btn" data-f="invert">Invert</button>
+          <button class="btn btn-ghost btn-sm flt-btn" data-f="blur">Blur</button>
+          <button class="btn btn-ghost btn-sm flt-btn" data-f="sharpen">Sharpen</button>
+          <button class="btn btn-ghost btn-sm flt-btn" data-f="emboss">Emboss</button>
+          <button class="btn btn-ghost btn-sm flt-btn" data-f="smooth">Smooth</button>
+          <button class="btn btn-ghost btn-sm flt-btn" data-f="edge">Edge Detect</button>
+        </div>
+
+        <div id="blurRow" style="display:none;" class="mb2">
+          <div class="shead"><span>Blur Radius</span><span class="slider-val" id="blurV">2</span></div>
+          <input type="range" id="blurR" min="0.5" max="20" step="0.5" value="2"/>
+        </div>
+
+        <button class="btn btn-ghost btn-sm mb2" style="width:100%;" onclick="resetEffects()"><i class="bi bi-arrow-counterclockwise"></i> Reset All Adjustments</button>
+
+        <div class="out-box">
+          <div class="out-box-title">Output</div>
+          <div class="row2">
+            <div><label class="lbl">Format</label>
+              <select id="eFmt">
+                <option value="auto">Auto</option>
+                <option value="JPEG">JPEG</option>
+                <option value="PNG">PNG</option>
+                <option value="WEBP">WEBP</option>
+              </select>
+            </div>
+            <div><label class="lbl">Quality: <span id="eQv">90</span>%</label>
+              <input type="range" id="eQ" min="1" max="100" value="90"/>
+            </div>
+          </div>
+        </div>
+
+        <div class="err-box" id="effectsErr"></div>
+        <button class="btn btn-primary w100 mt2" id="effectsBtn" disabled>
+          <span class="lbl"><i class="bi bi-magic"></i>Apply Effects</span>
+          <span class="spin"></span>
+        </button>
+      </div>
+
+      <!-- ─── OPTIMIZE ───────────────────── -->
+      <div class="tab-pane" id="pane-optimize">
+        <div class="slider-row">
+          <div class="shead"><span>Compression Quality</span><span class="slider-val" id="optQv">80</span>%</div>
+          <input type="range" id="optQ" min="1" max="100" step="1" value="80"/>
+          <div style="display:flex; justify-content:space-between; font-size:0.68rem; color:var(--muted);">
+            <span>Smallest file</span><span>Best quality</span>
+          </div>
+        </div>
+        <hr/>
+        <div class="sec mb1">Max Dimensions (optional — maintains aspect ratio)</div>
+        <div class="row2 mb2">
+          <div><label class="lbl">Max Width (px)</label><input type="number" id="optW" min="1" placeholder="No limit"/></div>
+          <div><label class="lbl">Max Height (px)</label><input type="number" id="optH" min="1" placeholder="No limit"/></div>
+        </div>
+
+        <div class="out-box">
+          <div class="out-box-title">Output Format</div>
+          <select id="optFmt">
+            <option value="auto">Auto (keep original)</option>
+            <option value="JPEG">JPEG — best for photos</option>
+            <option value="WEBP">WEBP — best compression ratio</option>
+            <option value="PNG">PNG — lossless</option>
+          </select>
+        </div>
+
+        <div class="err-box" id="optimizeErr"></div>
+        <button class="btn btn-primary w100 mt2" id="optimizeBtn" disabled>
+          <span class="lbl"><i class="bi bi-speedometer2"></i>Optimize Image</span>
+          <span class="spin"></span>
+        </button>
+      </div>
+
+      <!-- ─── CONVERT ────────────────────── -->
+      <div class="tab-pane" id="pane-convert">
+        <div class="sec mb1">Convert to Format</div>
+        <div class="fmt-grid mb1">
+          <button class="btn btn-ghost fmt-btn" data-fmt="JPEG"><span>🖼️</span>JPEG</button>
+          <button class="btn btn-ghost fmt-btn" data-fmt="PNG"><span>📸</span>PNG</button>
+          <button class="btn btn-ghost fmt-btn" data-fmt="WEBP"><span>🌐</span>WEBP</button>
+          <button class="btn btn-ghost fmt-btn" data-fmt="GIF"><span>🎞️</span>GIF</button>
+          <button class="btn btn-ghost fmt-btn" data-fmt="BMP"><span>🗃️</span>BMP</button>
+          <button class="btn btn-ghost fmt-btn" data-fmt="TIFF"><span>📄</span>TIFF</button>
+        </div>
+
+        <div id="convQRow" style="display:none;" class="mb2">
+          <div class="shead"><span>Quality</span><span class="slider-val" id="convQv">90</span>%</div>
+          <input type="range" id="convQ" min="1" max="100" step="1" value="90"/>
+        </div>
+
+        <div class="err-box" id="convertErr"></div>
+        <button class="btn btn-primary w100" id="convertBtn" disabled>
+          <span class="lbl"><i class="bi bi-arrow-left-right"></i>Convert Image</span>
+          <span class="spin"></span>
+        </button>
       </div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    // State
-    let currentFile = null;
-    let originalRatio = null;
-    let originalWidth = null;
-    let originalHeight = null;
-    let aspectLocked = true;
-    let resizedObjectURL = null;
+  <!-- ═══════════════ RIGHT COLUMN ══════════════ -->
+  <div style="display:flex; flex-direction:column; gap:0.75rem;">
 
-    // Elements
-    const dropzone = document.getElementById('dropzone');
-    const fileInput = document.getElementById('fileInput');
-    const fileInfo = document.getElementById('fileInfo');
-    const uploadProgress = document.getElementById('uploadProgress');
-    const uploadError = document.getElementById('uploadError');
-    const resizeBtn = document.getElementById('resizeBtn');
-    const resizeError = document.getElementById('resizeError');
-    const widthInput = document.getElementById('widthInput');
-    const heightInput = document.getElementById('heightInput');
-    const aspectLockBtn = document.getElementById('aspectLockBtn');
-    const lockIcon = document.getElementById('lockIcon');
-    const percentSlider = document.getElementById('percentSlider');
-    const percentNumber = document.getElementById('percentNumber');
-    const percentDisplay = document.getElementById('percentDisplay');
-    const percentPreview = document.getElementById('percentPreview');
-    const pixelInputs = document.getElementById('pixelInputs');
-    const percentInputs = document.getElementById('percentInputs');
-    const originalBox = document.getElementById('originalBox');
-    const resizedBox = document.getElementById('resizedBox');
-    const downloadSection = document.getElementById('downloadSection');
-    const downloadLink = document.getElementById('downloadLink');
+    <!-- Input / Crop Preview -->
+    <div class="panel">
+      <div class="panel-head" id="inputPanelHead"><i class="bi bi-image"></i><span id="inputPanelTitle">Image Preview</span></div>
+      <div class="panel-body">
+        <!-- Standard image preview -->
+        <div id="inputPrevWrap" class="prev-wrap">
+          <div class="prev-ph"><i class="bi bi-image-alt"></i><p>Upload an image to get started</p></div>
+        </div>
+        <!-- Crop canvas (shown only in crop mode) -->
+        <div id="cropCanvasWrap" style="display:none; overflow:auto;">
+          <canvas id="cropCanvas"></canvas>
+        </div>
+        <div class="rmeta" id="inputMeta"></div>
+      </div>
+    </div>
 
-    // ── Drag & Drop ──────────────────────────────────────────
-    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
-    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-    dropzone.addEventListener('drop', e => {
-      e.preventDefault();
-      dropzone.classList.remove('dragover');
-      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-    });
-    fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
+    <!-- Result -->
+    <div class="panel" id="resultPanel" style="display:none;">
+      <div class="panel-head"><i class="bi bi-check-circle" style="color:var(--success);"></i>Result</div>
+      <div class="panel-body">
+        <div class="prev-wrap" id="resultPrevWrap"></div>
+        <div class="rmeta" id="resultMeta"></div>
+        <a href="#" id="dlBtn" class="btn btn-success mt2" style="display:none; text-decoration:none;">
+          <i class="bi bi-download"></i>Download <span id="dlFmt"></span>
+        </a>
+      </div>
+    </div>
 
-    // ── Mode toggle ──────────────────────────────────────────
-    document.querySelectorAll('input[name="resizeMode"]').forEach(radio => {
-      radio.addEventListener('change', () => {
-        const isPixels = radio.value === 'pixels';
-        pixelInputs.classList.toggle('d-none', !isPixels);
-        percentInputs.classList.toggle('d-none', isPixels);
-        updatePercentPreview();
-      });
-    });
+  </div>
+</main>
 
-    // ── Aspect ratio lock ────────────────────────────────────
-    aspectLockBtn.addEventListener('click', () => {
-      aspectLocked = !aspectLocked;
-      aspectLockBtn.classList.toggle('locked', aspectLocked);
-      lockIcon.className = aspectLocked ? 'bi bi-link-45deg' : 'bi bi-link';
-      aspectLockBtn.title = aspectLocked ? 'Lock aspect ratio' : 'Aspect ratio unlocked';
-    });
+<script>
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let originalFile = null;   // Never changes after upload
+let currentFile = null;    // Updated after each operation
+let origW = 0, origH = 0;
+let curW = 0, curH = 0;
+let curFmt = 'PNG';
+let curPreviewURL = null;  // Object URL for currentFile display
+let resultBlobURL = null;  // Object URL for result display
+let aspectLocked = true;
+let selectedConvFmt = null;
 
-    widthInput.addEventListener('input', () => {
-      if (aspectLocked && originalRatio && widthInput.value) {
-        heightInput.value = Math.max(1, Math.round(parseInt(widthInput.value) / originalRatio));
-      }
-    });
+// Crop state
+let cropImg = null, cropScale = 1;
+let cropRect = { x: 0, y: 0, w: 0, h: 0 };
+let cropDrag = { on: false, mode: 'draw', sx: 0, sy: 0, orig: null };
+let cropAspectRatio = 0; // 0 = free
+const HSIZE = 8;
 
-    heightInput.addEventListener('input', () => {
-      if (aspectLocked && originalRatio && heightInput.value) {
-        widthInput.value = Math.max(1, Math.round(parseInt(heightInput.value) * originalRatio));
-      }
-    });
+// Effects CSS state (for live preview)
+let fxBrt = 1, fxCon = 1, fxSat = 1, fxBlur = 0, fxFilter = 'none';
 
-    // ── Percent slider/input sync ────────────────────────────
-    percentSlider.addEventListener('input', () => {
-      percentNumber.value = percentSlider.value;
-      percentDisplay.textContent = percentSlider.value;
-      updatePercentPreview();
-    });
-    percentNumber.addEventListener('input', () => {
-      let v = Math.max(1, Math.min(500, parseInt(percentNumber.value) || 1));
-      percentSlider.value = v;
-      percentDisplay.textContent = v;
-      updatePercentPreview();
-    });
+// ═══════════════════════════════════════════════
+// DOM REFS
+// ═══════════════════════════════════════════════
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const fileBar = document.getElementById('fileBar');
+const fileThumbnail = document.getElementById('fileThumbnail');
+const fbName = document.getElementById('fbName');
+const fbDims = document.getElementById('fbDims');
+const fbSize = document.getElementById('fbSize');
+const fbFmt = document.getElementById('fbFmt');
+const upbar = document.getElementById('upbar');
+const upbarFill = document.getElementById('upbarFill');
+const uploadErr = document.getElementById('uploadErr');
+const workStrip = document.getElementById('workStrip');
+const workInfo = document.getElementById('workInfo');
+const toolsPanel = document.getElementById('toolsPanel');
+const inputPrevWrap = document.getElementById('inputPrevWrap');
+const cropCanvasWrap = document.getElementById('cropCanvasWrap');
+const inputMeta = document.getElementById('inputMeta');
+const inputPanelTitle = document.getElementById('inputPanelTitle');
+const resultPanel = document.getElementById('resultPanel');
+const resultPrevWrap = document.getElementById('resultPrevWrap');
+const resultMeta = document.getElementById('resultMeta');
+const dlBtn = document.getElementById('dlBtn');
+const dlFmt = document.getElementById('dlFmt');
+const rW = document.getElementById('rW');
+const rH = document.getElementById('rH');
+const lockBtn = document.getElementById('lockBtn');
+const lockIcon = document.getElementById('lockIcon');
+const canvas = document.getElementById('cropCanvas');
+const ctx = canvas.getContext('2d');
 
-    function updatePercentPreview() {
-      if (!originalWidth || !originalHeight) return;
-      const pct = parseFloat(percentNumber.value) / 100;
-      const w = Math.max(1, Math.round(originalWidth * pct));
-      const h = Math.max(1, Math.round(originalHeight * pct));
-      percentPreview.textContent = `→ ${w} × ${h} px`;
+// ═══════════════════════════════════════════════
+// DRAG & DROP
+// ═══════════════════════════════════════════════
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+// ═══════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════
+document.getElementById('tabBar').addEventListener('click', e => {
+  const btn = e.target.closest('.tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('pane-' + btn.dataset.tab).classList.add('active');
+
+  const isCrop = btn.dataset.tab === 'crop';
+  cropCanvasWrap.style.display = isCrop ? 'block' : 'none';
+  inputPrevWrap.style.display = isCrop ? 'none' : 'flex';
+  inputPanelTitle.textContent = isCrop ? 'Crop — drag to select region' : 'Current Image';
+
+  if (isCrop && currentFile) initCropCanvas();
+  updateEffectPreview();
+});
+
+// ═══════════════════════════════════════════════
+// QUALITY RANGE LABELS
+// ═══════════════════════════════════════════════
+[['rQ','rQv'],['cQ','cQv'],['rotQ','rotQv'],['eQ','eQv'],['optQ','optQv'],['convQ','convQv']].forEach(([rid,vid]) => {
+  const r = document.getElementById(rid), v = document.getElementById(vid);
+  if (r && v) r.addEventListener('input', () => v.textContent = r.value);
+});
+
+// ═══════════════════════════════════════════════
+// RESIZE MODE TOGGLE
+// ═══════════════════════════════════════════════
+document.querySelectorAll('input[name="rmode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    const px = r.value === 'pixels';
+    document.getElementById('pxInputs').style.display = px ? 'block' : 'none';
+    document.getElementById('pctInputs').style.display = px ? 'none' : 'block';
+    updatePctPreview();
+  });
+});
+
+// ═══════════════════════════════════════════════
+// ASPECT LOCK
+// ═══════════════════════════════════════════════
+lockBtn.addEventListener('click', () => {
+  aspectLocked = !aspectLocked;
+  lockBtn.classList.toggle('on', aspectLocked);
+  lockIcon.className = aspectLocked ? 'bi bi-link-45deg' : 'bi bi-link';
+});
+rW.addEventListener('input', () => {
+  if (aspectLocked && origW && rW.value)
+    rH.value = Math.max(1, Math.round(parseInt(rW.value) / (origW / origH)));
+});
+rH.addEventListener('input', () => {
+  if (aspectLocked && origH && rH.value)
+    rW.value = Math.max(1, Math.round(parseInt(rH.value) * (origW / origH)));
+});
+
+// ═══════════════════════════════════════════════
+// PERCENT SLIDER
+// ═══════════════════════════════════════════════
+const pctSlider = document.getElementById('pctSlider');
+const pctNum = document.getElementById('pctNum');
+const pctDisplay = document.getElementById('pctDisplay');
+pctSlider.addEventListener('input', () => { pctNum.value = pctSlider.value; pctDisplay.textContent = pctSlider.value + '%'; updatePctPreview(); });
+pctNum.addEventListener('input', () => {
+  let v = Math.max(1, Math.min(500, parseInt(pctNum.value) || 1));
+  pctSlider.value = v; pctDisplay.textContent = v + '%'; updatePctPreview();
+});
+function updatePctPreview() {
+  const p = document.getElementById('pctPrev');
+  if (!p || !curW || !curH) return;
+  const s = parseFloat(pctNum.value) / 100;
+  p.textContent = `→ ${Math.max(1,Math.round(curW*s))} × ${Math.max(1,Math.round(curH*s))} px`;
+}
+
+// ═══════════════════════════════════════════════
+// FILE UPLOAD
+// ═══════════════════════════════════════════════
+async function handleFile(file) {
+  showErr(uploadErr, '');
+  upbar.classList.add('show'); upbarFill.style.width = '0%';
+  dropzone.style.display = 'none';
+  fileBar.style.display = 'none';
+
+  // Animate progress bar (indeterminate feel)
+  let prog = 0;
+  const pi = setInterval(() => {
+    prog = Math.min(prog + Math.random() * 15, 85);
+    upbarFill.style.width = prog + '%';
+  }, 120);
+
+  const fd = new FormData();
+  fd.append('file', file);
+
+  try {
+    const res = await fetch('/upload', { method: 'POST', body: fd });
+    clearInterval(pi); upbarFill.style.width = '100%';
+    setTimeout(() => upbar.classList.remove('show'), 400);
+
+    const data = await res.json();
+    if (!res.ok || data.error) { showDZ(); showErr(uploadErr, data.error || 'Upload failed'); return; }
+
+    originalFile = file;
+    currentFile = file;
+    origW = data.width; origH = data.height;
+    curW = data.width; curH = data.height;
+    curFmt = data.format;
+
+    // Thumbnail
+    fileThumbnail.src = data.data_uri;
+    fbName.textContent = data.filename;
+    fbDims.textContent = `${data.width} × ${data.height}`;
+    fbSize.textContent = data.size_human;
+    fbFmt.textContent = data.format;
+    fileBar.style.display = 'flex';
+
+    // Update preview
+    if (curPreviewURL) URL.revokeObjectURL(curPreviewURL);
+    curPreviewURL = null;
+    showInputPreview(data.data_uri, data.width, data.height, data.size_human, data.format);
+
+    // Working strip
+    workStrip.style.display = 'flex';
+    updateWorkStrip();
+
+    // Enable tools
+    toolsPanel.style.display = 'block';
+    rW.value = data.width; rH.value = data.height;
+    updatePctPreview();
+    enableAllBtns(true);
+
+    // Reset result
+    resultPanel.style.display = 'none';
+    if (resultBlobURL) { URL.revokeObjectURL(resultBlobURL); resultBlobURL = null; }
+
+    // Init crop if that tab is open
+    const activeTab = document.querySelector('.tab-btn.active');
+    if (activeTab && activeTab.dataset.tab === 'crop') initCropCanvas();
+
+  } catch (err) {
+    clearInterval(pi);
+    upbar.classList.remove('show');
+    showDZ();
+    showErr(uploadErr, 'Network error: ' + err.message);
+  }
+}
+
+function showDZ() {
+  dropzone.style.display = '';
+  fileBar.style.display = 'none';
+}
+
+function showInputPreview(src, w, h, size, fmt) {
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = 'Current image';
+  inputPrevWrap.innerHTML = '';
+  inputPrevWrap.appendChild(img);
+  inputMeta.innerHTML = makeTags(w, h, size, fmt);
+  updateEffectPreview();
+}
+
+function makeTags(w, h, size, fmt) {
+  let t = '';
+  if (w && h) t += `<span class="tag blue">${w} × ${h} px</span>`;
+  if (size) t += `<span class="tag">${size}</span>`;
+  if (fmt) t += `<span class="tag">${fmt}</span>`;
+  return t;
+}
+
+function showErr(el, msg) {
+  el.textContent = msg;
+  el.classList.toggle('show', !!msg);
+}
+
+function enableAllBtns(on) {
+  ['resizeBtn','cropBtn','effectsBtn','optimizeBtn','convertBtn'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.disabled = !on;
+  });
+}
+
+function updateWorkStrip() {
+  workInfo.textContent = `Working: ${curW} × ${curH} ${curFmt}`;
+}
+
+// ═══════════════════════════════════════════════
+// RESET TO ORIGINAL
+// ═══════════════════════════════════════════════
+function resetToOriginal() {
+  if (!originalFile) return;
+  currentFile = originalFile;
+  curW = origW; curH = origH; curFmt = document.getElementById('fbFmt').textContent;
+  rW.value = origW; rH.value = origH;
+  updatePctPreview(); updateWorkStrip();
+  if (curPreviewURL) { URL.revokeObjectURL(curPreviewURL); curPreviewURL = null; }
+  showInputPreview(fileThumbnail.src, origW, origH, fbSize.textContent, curFmt);
+  const activeTab = document.querySelector('.tab-btn.active');
+  if (activeTab && activeTab.dataset.tab === 'crop') initCropCanvas();
+}
+
+// ═══════════════════════════════════════════════
+// GENERIC OPERATION HELPER
+// ═══════════════════════════════════════════════
+async function runOp(endpoint, formData, btnId, errId) {
+  const btn = document.getElementById(btnId);
+  const err = document.getElementById(errId);
+  showErr(err, '');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  try {
+    const res = await fetch(endpoint, { method: 'POST', body: formData });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      showErr(err, j.error || 'Operation failed');
+      return;
     }
 
-    // ── File handling ────────────────────────────────────────
-    async function handleFile(file) {
-      currentFile = file;
-      resizeBtn.disabled = true;
-      fileInfo.classList.add('d-none');
-      uploadError.classList.add('d-none');
-      uploadProgress.classList.remove('d-none');
+    const blob = await res.blob();
+    const w = parseInt(res.headers.get('X-Image-Width') || 0);
+    const h = parseInt(res.headers.get('X-Image-Height') || 0);
+    const sz = res.headers.get('X-Image-Size-Human') || '';
+    const fmt = res.headers.get('X-Image-Format') || curFmt;
+    const disp = res.headers.get('Content-Disposition') || '';
+    const fnm = (disp.match(/filename="?([^"]+)"?/) || [])[1] || 'result';
 
-      // Reset results
-      resetResults();
+    // Update current working image
+    if (resultBlobURL) URL.revokeObjectURL(resultBlobURL);
+    if (curPreviewURL) URL.revokeObjectURL(curPreviewURL);
 
-      const formData = new FormData();
-      formData.append('file', file);
+    resultBlobURL = URL.createObjectURL(blob);
+    curPreviewURL = URL.createObjectURL(blob);
 
-      try {
-        const res = await fetch('/upload', { method: 'POST', body: formData });
-        const data = await res.json();
-        uploadProgress.classList.add('d-none');
+    // Update working state
+    currentFile = new File([blob], fnm, { type: blob.type });
+    curW = w || curW; curH = h || curH; curFmt = fmt;
+    updateWorkStrip();
+    rW.value = curW; rH.value = curH;
+    updatePctPreview();
 
-        if (!res.ok || data.error) {
-          showUploadError(data.error || 'Upload failed');
-          return;
-        }
-
-        originalWidth = data.width;
-        originalHeight = data.height;
-        originalRatio = data.width / data.height;
-
-        // Populate info badges
-        document.getElementById('badgeDims').textContent = `${data.width} × ${data.height}`;
-        document.getElementById('badgeSize').textContent = data.size_human;
-        document.getElementById('badgeFormat').textContent = data.format;
-        document.getElementById('badgeMode').textContent = data.mode;
-        document.getElementById('fileNameLabel').textContent = data.filename;
-        fileInfo.classList.remove('d-none');
-
-        // Set pixel inputs to original dimensions
-        widthInput.value = data.width;
-        heightInput.value = data.height;
-        updatePercentPreview();
-
-        // Show original preview
-        const img = document.createElement('img');
-        img.src = data.data_uri;
-        img.className = 'preview-img';
-        img.alt = 'Original image';
-        originalBox.innerHTML = '';
-        originalBox.appendChild(img);
-
-        const meta = document.getElementById('originalMeta');
-        meta.textContent = `${data.width} × ${data.height} px — ${data.size_human} — ${data.format}`;
-        meta.classList.remove('d-none');
-
-        resizeBtn.disabled = false;
-
-      } catch (err) {
-        uploadProgress.classList.add('d-none');
-        showUploadError('Network error: ' + err.message);
-      }
+    // Show updated input preview
+    const activeTab = document.querySelector('.tab-btn.active');
+    if (!activeTab || activeTab.dataset.tab !== 'crop') {
+      showInputPreview(curPreviewURL, curW, curH, sz, fmt);
+    } else {
+      initCropCanvas();
     }
 
-    function showUploadError(msg) {
-      uploadError.textContent = msg;
-      uploadError.classList.remove('d-none');
+    // Show result
+    const rImg = document.createElement('img');
+    rImg.src = resultBlobURL;
+    rImg.alt = 'Result';
+    resultPrevWrap.innerHTML = '';
+    resultPrevWrap.appendChild(rImg);
+    resultMeta.innerHTML = makeTags(w, h, sz, fmt);
+
+    dlBtn.href = resultBlobURL;
+    dlBtn.download = fnm;
+    dlFmt.textContent = fmt;
+    dlBtn.style.display = 'flex';
+    resultPanel.style.display = 'block';
+
+    resetEffectSliders(); // Clear CSS filter overlay after apply
+
+  } catch (e) {
+    showErr(err, 'Network error: ' + e.message);
+  } finally {
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// RESIZE
+// ═══════════════════════════════════════════════
+document.getElementById('resizeBtn').addEventListener('click', () => {
+  if (!currentFile) return;
+  const mode = document.querySelector('input[name="rmode"]:checked').value;
+  const fd = new FormData();
+  fd.append('file', currentFile);
+  fd.append('mode', mode);
+  fd.append('resample', document.getElementById('resample').value);
+  fd.append('output_format', document.getElementById('rFmt').value);
+  fd.append('quality', document.getElementById('rQ').value);
+  fd.append('maintain_aspect', aspectLocked ? 'true' : 'false');
+  if (mode === 'pixels') {
+    fd.append('width', rW.value); fd.append('height', rH.value);
+  } else {
+    fd.append('percent', pctNum.value);
+  }
+  runOp('/resize', fd, 'resizeBtn', 'resizeErr');
+});
+
+// ═══════════════════════════════════════════════
+// CROP
+// ═══════════════════════════════════════════════
+document.getElementById('cropBtn').addEventListener('click', () => {
+  if (!currentFile) return;
+  const fd = new FormData();
+  fd.append('file', currentFile);
+  fd.append('x', document.getElementById('cX').value);
+  fd.append('y', document.getElementById('cY').value);
+  fd.append('width', document.getElementById('cW').value);
+  fd.append('height', document.getElementById('cH').value);
+  fd.append('output_format', document.getElementById('cFmt').value);
+  fd.append('quality', document.getElementById('cQ').value);
+  runOp('/crop', fd, 'cropBtn', 'cropErr');
+});
+
+// Crop presets
+document.querySelectorAll('.crop-pre').forEach(btn => {
+  btn.addEventListener('click', () => {
+    cropAspectRatio = parseFloat(btn.dataset.r);
+    document.querySelectorAll('.crop-pre').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (cropAspectRatio && cropRect.w > 0) {
+      cropRect.h = Math.max(1, Math.round(cropRect.w / cropAspectRatio));
+      cropRect.h = Math.min(cropRect.h, curH - cropRect.y);
+      syncCropInputs(); drawCrop();
+    }
+  });
+});
+
+function cropSelectAll() {
+  cropRect = { x: 0, y: 0, w: curW, h: curH };
+  syncCropInputs(); drawCrop();
+}
+
+function cropCenter() {
+  const s = Math.min(curW, curH);
+  cropRect = { x: Math.round((curW - s) / 2), y: Math.round((curH - s) / 2), w: s, h: s };
+  syncCropInputs(); drawCrop();
+}
+
+// Crop input -> canvas sync
+['cX','cY','cW','cH'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    cropRect.x = parseInt(document.getElementById('cX').value) || 0;
+    cropRect.y = parseInt(document.getElementById('cY').value) || 0;
+    cropRect.w = parseInt(document.getElementById('cW').value) || 1;
+    cropRect.h = parseInt(document.getElementById('cH').value) || 1;
+    drawCrop();
+  });
+});
+
+function syncCropInputs() {
+  document.getElementById('cX').value = Math.round(cropRect.x);
+  document.getElementById('cY').value = Math.round(cropRect.y);
+  document.getElementById('cW').value = Math.round(cropRect.w);
+  document.getElementById('cH').value = Math.round(cropRect.h);
+}
+
+// ── Crop Canvas ───────────────────────────────
+function initCropCanvas() {
+  if (!currentFile) return;
+  const url = curPreviewURL || URL.createObjectURL(currentFile);
+  if (!cropImg) cropImg = new Image();
+  cropImg.onload = () => {
+    const maxW = cropCanvasWrap.parentElement.clientWidth - 32;
+    const maxH = 480;
+    cropScale = Math.min(1, maxW / cropImg.naturalWidth, maxH / cropImg.naturalHeight);
+    canvas.width = Math.round(cropImg.naturalWidth * cropScale);
+    canvas.height = Math.round(cropImg.naturalHeight * cropScale);
+    cropRect = { x: 0, y: 0, w: curW, h: curH };
+    drawCrop(); syncCropInputs();
+    if (url !== curPreviewURL) URL.revokeObjectURL(url);
+  };
+  cropImg.src = url;
+}
+
+function getImgCoords(e) {
+  const rect = canvas.getBoundingClientRect();
+  const cx = e.touches ? e.touches[0].clientX : e.clientX;
+  const cy = e.touches ? e.touches[0].clientY : e.clientY;
+  return {
+    x: Math.round((cx - rect.left) * (canvas.width / rect.width) / cropScale),
+    y: Math.round((cy - rect.top) * (canvas.height / rect.height) / cropScale)
+  };
+}
+
+function getHandle(px, py) {
+  const tol = HSIZE * 1.5 / cropScale;
+  const { x, y, w, h } = cropRect;
+  const pts = { nw:[x,y], ne:[x+w,y], sw:[x,y+h], se:[x+w,y+h], n:[x+w/2,y], s:[x+w/2,y+h], w:[x,y+h/2], e:[x+w,y+h/2] };
+  for (const [n,[hx,hy]] of Object.entries(pts))
+    if (Math.abs(px-hx) <= tol && Math.abs(py-hy) <= tol) return n;
+  return null;
+}
+
+function inCrop(px, py) {
+  return px >= cropRect.x && px <= cropRect.x + cropRect.w && py >= cropRect.y && py <= cropRect.y + cropRect.h;
+}
+
+canvas.addEventListener('mousedown', startCropDrag);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); startCropDrag(e.touches[0] || e); }, { passive: false });
+function startCropDrag(e) {
+  const { x, y } = getImgCoords(e);
+  const handle = getHandle(x, y);
+  if (handle) {
+    cropDrag = { on: true, mode: 'resize-' + handle, sx: x, sy: y, orig: { ...cropRect } };
+  } else if (inCrop(x, y)) {
+    cropDrag = { on: true, mode: 'move', sx: x, sy: y, orig: { ...cropRect } };
+  } else {
+    cropDrag = { on: true, mode: 'draw', sx: x, sy: y, orig: null };
+    cropRect = { x, y, w: 0, h: 0 };
+  }
+}
+
+canvas.addEventListener('mousemove', moveCropDrag);
+canvas.addEventListener('touchmove', e => { e.preventDefault(); moveCropDrag(e.touches[0]); }, { passive: false });
+function moveCropDrag(e) {
+  if (!cropDrag.on) return;
+  const { x, y } = getImgCoords(e);
+  const dx = x - cropDrag.sx, dy = y - cropDrag.sy;
+  const or = cropDrag.orig;
+
+  if (cropDrag.mode === 'draw') {
+    const nx = Math.max(0, Math.min(cropDrag.sx, x));
+    const ny = Math.max(0, Math.min(cropDrag.sy, y));
+    let nw = Math.min(Math.abs(x - cropDrag.sx), curW - nx);
+    let nh = Math.min(Math.abs(y - cropDrag.sy), curH - ny);
+    if (cropAspectRatio) { nh = Math.max(1, Math.round(nw / cropAspectRatio)); if (ny + nh > curH) nh = curH - ny; }
+    cropRect = { x: nx, y: ny, w: nw, h: nh };
+  } else if (cropDrag.mode === 'move') {
+    cropRect.x = Math.max(0, Math.min(or.x + dx, curW - or.w));
+    cropRect.y = Math.max(0, Math.min(or.y + dy, curH - or.h));
+    cropRect.w = or.w; cropRect.h = or.h;
+  } else {
+    let { x: rx, y: ry, w: rw, h: rh } = or;
+    const m = cropDrag.mode.replace('resize-', '');
+    if (m.includes('e')) rw = Math.max(1, Math.min(or.w + dx, curW - rx));
+    if (m.includes('s')) rh = Math.max(1, Math.min(or.h + dy, curH - ry));
+    if (m.includes('w')) { const nx = Math.max(0, Math.min(or.x + dx, or.x + or.w - 1)); rw = or.x + or.w - nx; rx = nx; }
+    if (m.includes('n')) { const ny = Math.max(0, Math.min(or.y + dy, or.y + or.h - 1)); rh = or.y + or.h - ny; ry = ny; }
+    if (cropAspectRatio && (m.includes('e') || m.includes('w'))) rh = Math.max(1, Math.round(rw / cropAspectRatio));
+    cropRect = { x: rx, y: ry, w: rw, h: rh };
+  }
+  drawCrop(); syncCropInputs();
+}
+canvas.addEventListener('mouseup', () => { cropDrag.on = false; });
+canvas.addEventListener('mouseleave', () => { cropDrag.on = false; });
+canvas.addEventListener('touchend', () => { cropDrag.on = false; });
+
+function drawCrop() {
+  if (!cropImg || !cropImg.complete) return;
+  const cw = canvas.width, ch = canvas.height;
+  ctx.clearRect(0, 0, cw, ch);
+  ctx.drawImage(cropImg, 0, 0, cw, ch);
+
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(0, 0, cw, ch);
+
+  const cx = cropRect.x * cropScale, cy = cropRect.y * cropScale;
+  const cW = cropRect.w * cropScale, cH = cropRect.h * cropScale;
+
+  if (cW > 0 && cH > 0) {
+    ctx.clearRect(cx, cy, cW, cH);
+    ctx.drawImage(cropImg, cropRect.x, cropRect.y, cropRect.w, cropRect.h, cx, cy, cW, cH);
+
+    // Rule of thirds
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1;
+    for (let i = 1; i <= 2; i++) {
+      ctx.beginPath(); ctx.moveTo(cx + cW*i/3, cy); ctx.lineTo(cx + cW*i/3, cy + cH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy + cH*i/3); ctx.lineTo(cx + cW, cy + cH*i/3); ctx.stroke();
     }
 
-    function resetResults() {
-      resizedBox.innerHTML = '<span class="placeholder-text">Resized image will appear here</span>';
-      document.getElementById('resizedMeta').classList.add('d-none');
-      downloadSection.classList.add('d-none');
-      if (resizedObjectURL) { URL.revokeObjectURL(resizedObjectURL); resizedObjectURL = null; }
-    }
+    // Border
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 2;
+    ctx.strokeRect(cx, cy, cW, cH);
 
-    // ── Resize ───────────────────────────────────────────────
-    resizeBtn.addEventListener('click', async () => {
-      if (!currentFile) return;
+    // Handles
+    const pts = [[cx,cy],[cx+cW,cy],[cx,cy+cH],[cx+cW,cy+cH],[cx+cW/2,cy],[cx+cW/2,cy+cH],[cx,cy+cH/2],[cx+cW,cy+cH/2]];
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 1.5;
+    pts.forEach(([hx,hy]) => { ctx.fillRect(hx-HSIZE/2, hy-HSIZE/2, HSIZE, HSIZE); ctx.strokeRect(hx-HSIZE/2, hy-HSIZE/2, HSIZE, HSIZE); });
 
-      const mode = document.querySelector('input[name="resizeMode"]:checked').value;
-      const formData = new FormData();
-      formData.append('file', currentFile);
-      formData.append('mode', mode);
-      formData.append('maintain_aspect', aspectLocked ? 'true' : 'false');
-      formData.append('resample', document.getElementById('resampleSelect').value);
+    // Size label
+    ctx.fillStyle = 'rgba(99,102,241,0.85)';
+    const lbl = `${Math.round(cropRect.w)} × ${Math.round(cropRect.h)}`;
+    const lw = ctx.measureText(lbl).width + 12;
+    ctx.fillRect(cx, Math.max(0, cy - 22), lw, 20);
+    ctx.fillStyle = '#fff'; ctx.font = '11px system-ui';
+    ctx.fillText(lbl, cx + 6, Math.max(14, cy - 6));
+  }
+}
 
-      if (mode === 'pixels') {
-        formData.append('width', widthInput.value || '');
-        formData.append('height', heightInput.value || '');
-      } else {
-        formData.append('percent', percentNumber.value || '100');
-      }
+// ═══════════════════════════════════════════════
+// ROTATE
+// ═══════════════════════════════════════════════
+async function doRotate(action, angle, custom) {
+  if (!currentFile) return;
+  const err = document.getElementById('rotateErr');
+  showErr(err, '');
 
-      // Loading state
-      resizeBtn.classList.add('loading');
-      resizeBtn.disabled = true;
-      resizeError.classList.add('d-none');
-      resetResults();
+  const fd = new FormData();
+  fd.append('file', currentFile);
+  fd.append('action', action);
+  if (action === 'rotate') {
+    const a = custom ? parseFloat(document.getElementById('customAngle').value) : angle;
+    fd.append('angle', a);
+    fd.append('expand', custom ? document.getElementById('expandSel').value : 'true');
+  }
+  fd.append('output_format', document.getElementById('rotFmt').value);
+  fd.append('quality', document.getElementById('rotQ').value);
 
-      try {
-        const res = await fetch('/resize', { method: 'POST', body: formData });
+  try {
+    const res = await fetch('/rotate', { method: 'POST', body: fd });
+    if (!res.ok) { const j = await res.json().catch(()=>({})); showErr(err, j.error || 'Rotate failed'); return; }
+    await applyResult(res);
+  } catch(e) { showErr(err, 'Network error: ' + e.message); }
+}
 
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: 'Resize failed' }));
-          showResizeError(err.error || 'Resize failed');
-          return;
-        }
+// ═══════════════════════════════════════════════
+// EFFECTS (live CSS filter preview)
+// ═══════════════════════════════════════════════
+function updateEffectPreview() {
+  const img = inputPrevWrap.querySelector('img');
+  if (!img) return;
+  let f = `brightness(${fxBrt}) contrast(${fxCon}) saturate(${fxSat})`;
+  if (fxBlur > 0) f += ` blur(${fxBlur}px)`;
+  if (fxFilter === 'grayscale') f += ' grayscale(1)';
+  else if (fxFilter === 'sepia') f += ' sepia(1)';
+  else if (fxFilter === 'invert') f += ' invert(1)';
+  img.style.filter = f;
+}
 
-        const blob = await res.blob();
+function resetEffectSliders() {
+  ['brt','con','sat','shr'].forEach(id => { const el = document.getElementById(id); if (el) el.value = 1; });
+  document.getElementById('blurR').value = 2;
+  fxBrt = 1; fxCon = 1; fxSat = 1; fxBlur = 0; fxFilter = 'none';
+  document.getElementById('brtV').textContent = '1.0';
+  document.getElementById('conV').textContent = '1.0';
+  document.getElementById('satV').textContent = '1.0';
+  document.getElementById('shrV').textContent = '1.0';
+  document.getElementById('blurV').textContent = '2';
+  document.querySelectorAll('.flt-btn').forEach(b => b.classList.toggle('active', b.dataset.f === 'none'));
+  document.getElementById('blurRow').style.display = 'none';
+  const img = inputPrevWrap.querySelector('img');
+  if (img) img.style.filter = '';
+}
 
-        // Read custom headers
-        const newW = res.headers.get('X-Resized-Width');
-        const newH = res.headers.get('X-Resized-Height');
-        const newSizeHuman = res.headers.get('X-Resized-Size-Human');
-        const disposition = res.headers.get('Content-Disposition') || '';
-        const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
-        const outFilename = filenameMatch ? filenameMatch[1] : 'resized.png';
+function resetEffects() { resetEffectSliders(); }
 
-        // Display resized preview
-        if (resizedObjectURL) URL.revokeObjectURL(resizedObjectURL);
-        resizedObjectURL = URL.createObjectURL(blob);
+[['brt','brtV', v => fxBrt=v],['con','conV', v => fxCon=v],['sat','satV', v => fxSat=v]].forEach(([id,vid,setter]) => {
+  document.getElementById(id).addEventListener('input', function() {
+    const v = parseFloat(this.value).toFixed(2);
+    document.getElementById(vid).textContent = v;
+    setter(parseFloat(v));
+    updateEffectPreview();
+  });
+});
+document.getElementById('shr').addEventListener('input', function() {
+  document.getElementById('shrV').textContent = parseFloat(this.value).toFixed(2);
+});
+document.getElementById('blurR').addEventListener('input', function() {
+  fxBlur = parseFloat(this.value);
+  document.getElementById('blurV').textContent = this.value;
+  updateEffectPreview();
+});
 
-        const img = document.createElement('img');
-        img.src = resizedObjectURL;
-        img.className = 'preview-img';
-        img.alt = 'Resized image';
-        resizedBox.innerHTML = '';
-        resizedBox.appendChild(img);
+document.querySelectorAll('.flt-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.flt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    fxFilter = btn.dataset.f;
+    document.getElementById('blurRow').style.display = fxFilter === 'blur' ? 'block' : 'none';
+    updateEffectPreview();
+  });
+});
 
-        const meta = document.getElementById('resizedMeta');
-        meta.textContent = `${newW} × ${newH} px — ${newSizeHuman || ''}`;
-        meta.classList.remove('d-none');
+document.getElementById('effectsBtn').addEventListener('click', () => {
+  if (!currentFile) return;
+  const fd = new FormData();
+  fd.append('file', currentFile);
+  fd.append('brightness', document.getElementById('brt').value);
+  fd.append('contrast', document.getElementById('con').value);
+  fd.append('saturation', document.getElementById('sat').value);
+  fd.append('sharpness', document.getElementById('shr').value);
+  fd.append('filter', fxFilter);
+  if (fxFilter === 'blur') fd.append('blur_radius', document.getElementById('blurR').value);
+  fd.append('output_format', document.getElementById('eFmt').value);
+  fd.append('quality', document.getElementById('eQ').value);
+  runOp('/effects', fd, 'effectsBtn', 'effectsErr');
+});
 
-        // Download
-        downloadLink.href = resizedObjectURL;
-        downloadLink.download = outFilename;
-        downloadSection.classList.remove('d-none');
+// ═══════════════════════════════════════════════
+// OPTIMIZE
+// ═══════════════════════════════════════════════
+document.getElementById('optQ').addEventListener('input', function() {
+  document.getElementById('optQv').textContent = this.value;
+});
 
-      } catch (err) {
-        showResizeError('Network error: ' + err.message);
-      } finally {
-        resizeBtn.classList.remove('loading');
-        resizeBtn.disabled = false;
-      }
-    });
+document.getElementById('optimizeBtn').addEventListener('click', () => {
+  if (!currentFile) return;
+  const fd = new FormData();
+  fd.append('file', currentFile);
+  fd.append('quality', document.getElementById('optQ').value);
+  fd.append('output_format', document.getElementById('optFmt').value);
+  const mw = document.getElementById('optW').value;
+  const mh = document.getElementById('optH').value;
+  if (mw) fd.append('max_width', mw);
+  if (mh) fd.append('max_height', mh);
+  runOp('/optimize', fd, 'optimizeBtn', 'optimizeErr');
+});
 
-    function showResizeError(msg) {
-      resizeError.textContent = msg;
-      resizeError.classList.remove('d-none');
-    }
-  </script>
+// ═══════════════════════════════════════════════
+// CONVERT
+// ═══════════════════════════════════════════════
+document.querySelectorAll('.fmt-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedConvFmt = btn.dataset.fmt;
+    const needsQ = ['JPEG','WEBP'].includes(selectedConvFmt);
+    document.getElementById('convQRow').style.display = needsQ ? 'block' : 'none';
+    document.getElementById('convertBtn').disabled = false;
+  });
+});
+
+document.getElementById('convQ').addEventListener('input', function() {
+  document.getElementById('convQv').textContent = this.value;
+});
+
+document.getElementById('convertBtn').addEventListener('click', () => {
+  if (!currentFile || !selectedConvFmt) return;
+  const fd = new FormData();
+  fd.append('file', currentFile);
+  fd.append('output_format', selectedConvFmt);
+  fd.append('quality', document.getElementById('convQ').value);
+  runOp('/convert', fd, 'convertBtn', 'convertErr');
+});
+
+// ═══════════════════════════════════════════════
+// APPLY RESULT HELPER (used by rotate direct calls)
+// ═══════════════════════════════════════════════
+async function applyResult(res) {
+  const blob = await res.blob();
+  const w = parseInt(res.headers.get('X-Image-Width') || 0);
+  const h = parseInt(res.headers.get('X-Image-Height') || 0);
+  const sz = res.headers.get('X-Image-Size-Human') || '';
+  const fmt = res.headers.get('X-Image-Format') || curFmt;
+  const disp = res.headers.get('Content-Disposition') || '';
+  const fnm = (disp.match(/filename="?([^"]+)"?/) || [])[1] || 'result';
+
+  if (resultBlobURL) URL.revokeObjectURL(resultBlobURL);
+  if (curPreviewURL) URL.revokeObjectURL(curPreviewURL);
+  resultBlobURL = URL.createObjectURL(blob);
+  curPreviewURL = URL.createObjectURL(blob);
+
+  currentFile = new File([blob], fnm, { type: blob.type });
+  curW = w || curW; curH = h || curH; curFmt = fmt;
+  updateWorkStrip(); rW.value = curW; rH.value = curH; updatePctPreview();
+
+  const activeTab = document.querySelector('.tab-btn.active');
+  if (!activeTab || activeTab.dataset.tab !== 'crop') {
+    showInputPreview(curPreviewURL, curW, curH, sz, fmt);
+  } else { initCropCanvas(); }
+
+  const rImg = document.createElement('img');
+  rImg.src = resultBlobURL; rImg.alt = 'Result';
+  resultPrevWrap.innerHTML = ''; resultPrevWrap.appendChild(rImg);
+  resultMeta.innerHTML = makeTags(w, h, sz, fmt);
+  dlBtn.href = resultBlobURL; dlBtn.download = fnm; dlFmt.textContent = fmt;
+  dlBtn.style.display = 'flex'; resultPanel.style.display = 'block';
+  resetEffectSliders();
+}
+</script>
 </body>
 </html>
