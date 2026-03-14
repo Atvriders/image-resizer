@@ -302,8 +302,8 @@
   <!-- ═══════════════ LEFT COLUMN ═══════════════ -->
   <div style="display:flex; flex-direction:column; gap:0.75rem;">
 
-    <!-- Upload Panel -->
-    <div class="panel">
+    <!-- Upload Panel (hidden until image/GIF exists) -->
+    <div class="panel" id="imagePanel" style="display:none;">
       <div class="panel-head"><i class="bi bi-upload"></i>Image</div>
       <div class="panel-body">
 
@@ -334,7 +334,7 @@
         <div class="err-box" id="uploadErr"></div>
 
         <!-- Working image strip -->
-        <div id="workStrip" style="display:flex;">
+        <div id="workStrip" style="display:none;">
           <i class="bi bi-layers"></i>
           <span id="workInfo">Working on: original</span>
           <button onclick="resetToOriginal()" title="Reset to original image"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>
@@ -346,17 +346,17 @@
     <!-- Tools Panel (hidden until upload) -->
     <div class="panel" id="toolsPanel">
       <div class="tab-bar" id="tabBar">
-        <button class="tab-btn active" data-tab="resize"><i class="bi bi-arrows-angle-expand"></i>Resize</button>
-        <button class="tab-btn" data-tab="crop"><i class="bi bi-crop"></i>Crop</button>
-        <button class="tab-btn" data-tab="rotate"><i class="bi bi-arrow-clockwise"></i>Rotate</button>
-        <button class="tab-btn" data-tab="effects"><i class="bi bi-magic"></i>Effects</button>
-        <button class="tab-btn" data-tab="optimize"><i class="bi bi-speedometer2"></i>Optimize</button>
-        <button class="tab-btn" data-tab="convert"><i class="bi bi-arrow-left-right"></i>Convert</button>
-        <button class="tab-btn" data-tab="videogif"><i class="bi bi-film"></i>Video→GIF</button>
+        <button class="tab-btn img-tab" data-tab="resize" style="display:none;"><i class="bi bi-arrows-angle-expand"></i>Resize</button>
+        <button class="tab-btn img-tab" data-tab="crop" style="display:none;"><i class="bi bi-crop"></i>Crop</button>
+        <button class="tab-btn img-tab" data-tab="rotate" style="display:none;"><i class="bi bi-arrow-clockwise"></i>Rotate</button>
+        <button class="tab-btn img-tab" data-tab="effects" style="display:none;"><i class="bi bi-magic"></i>Effects</button>
+        <button class="tab-btn img-tab" data-tab="optimize" style="display:none;"><i class="bi bi-speedometer2"></i>Optimize</button>
+        <button class="tab-btn img-tab" data-tab="convert" style="display:none;"><i class="bi bi-arrow-left-right"></i>Convert</button>
+        <button class="tab-btn active" data-tab="videogif"><i class="bi bi-film"></i>Video→GIF</button>
       </div>
 
       <!-- ─── RESIZE ─────────────────────── -->
-      <div class="tab-pane active" id="pane-resize">
+      <div class="tab-pane" id="pane-resize">
         <div class="mode-toggle mb2">
           <input type="radio" name="rmode" id="rPx" value="pixels" checked/>
           <label for="rPx"><i class="bi bi-bounding-box"></i>Pixels</label>
@@ -649,7 +649,7 @@
       </div>
 
       <!-- ─── VIDEO→GIF ───────────────────── -->
-      <div class="tab-pane" id="pane-videogif">
+      <div class="tab-pane active" id="pane-videogif">
         <!-- Video drop zone -->
         <div id="videoDrop" onclick="videoInput.click()" style="border:2px dashed var(--border2); border-radius:8px; padding:1.25rem 1rem; text-align:center; cursor:pointer; background:var(--bg3); transition:all 0.2s; margin-bottom:0.75rem;">
           <i class="bi bi-camera-video" style="font-size:1.8rem; color:var(--muted); display:block; margin-bottom:0.4rem;"></i>
@@ -962,6 +962,7 @@ async function handleFile(file) {
     rW.value = data.width; rH.value = data.height;
     updatePctPreview();
     enableAllBtns(true);
+    revealImageTools();
 
     // Reset result
     resultPanel.style.display = 'none';
@@ -1005,6 +1006,11 @@ function makeTags(w, h, size, fmt) {
 function showErr(el, msg) {
   el.textContent = msg;
   el.classList.toggle('show', !!msg);
+}
+
+function revealImageTools() {
+  document.getElementById('imagePanel').style.display = 'block';
+  document.querySelectorAll('.img-tab').forEach(t => t.style.display = '');
 }
 
 function enableAllBtns(on) {
@@ -1586,6 +1592,7 @@ document.getElementById('videogifBtn').addEventListener('click', async () => {
 
     // Enable image tools so the GIF can be further edited
     enableAllBtns(true);
+    revealImageTools();
     workStrip.style.display = 'flex';
 
   } catch (e) {
