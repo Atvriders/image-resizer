@@ -268,6 +268,20 @@
     .check-pop { animation: pop-in 0.35s cubic-bezier(.175,.885,.32,1.275) forwards; }
     .status-spin { width: 16px; height: 16px; border: 2px solid var(--border2); border-top-color: var(--primary); border-radius: 50%; animation: rot 0.65s linear infinite; display: inline-block; flex-shrink: 0; }
     .ready-bar { border-color: rgba(16,185,129,0.5) !important; background: rgba(16,185,129,0.06) !important; transition: border-color 0.3s, background 0.3s; }
+    @keyframes idle-squish {
+      0%   { transform: rotate(0deg)   scaleX(1)    scaleY(1);    }
+      8%   { transform: rotate(0deg)   scaleX(1.25) scaleY(0.75); }
+      16%  { transform: rotate(0deg)   scaleX(0.82) scaleY(1.18); }
+      24%  { transform: rotate(0deg)   scaleX(1.08) scaleY(0.92); }
+      32%  { transform: rotate(0deg)   scaleX(1)    scaleY(1);    }
+      56%  { transform: rotate(180deg) scaleX(1)    scaleY(1);    }
+      64%  { transform: rotate(180deg) scaleX(1.25) scaleY(0.75); }
+      72%  { transform: rotate(180deg) scaleX(0.82) scaleY(1.18); }
+      80%  { transform: rotate(180deg) scaleX(1.08) scaleY(0.92); }
+      88%  { transform: rotate(180deg) scaleX(1)    scaleY(1);    }
+      100% { transform: rotate(360deg) scaleX(1)    scaleY(1);    }
+    }
+    .idle-icon { animation: idle-squish 2.8s ease-in-out infinite; display: inline-block; transform-origin: center; }
     .loading .lbl { display: none; }
     .loading .spin { display: inline-block; }
 
@@ -657,7 +671,7 @@
       <div class="tab-pane active" id="pane-videogif">
         <!-- Video drop zone -->
         <div id="videoDrop" onclick="videoInput.click()" style="border:2px dashed var(--border2); border-radius:8px; padding:1.25rem 1rem; text-align:center; cursor:pointer; background:var(--bg3); transition:all 0.2s; margin-bottom:0.75rem;">
-          <i class="bi bi-camera-video" style="font-size:1.8rem; color:var(--muted); display:block; margin-bottom:0.4rem;"></i>
+          <i class="bi bi-film idle-icon" style="font-size:2.4rem; color:var(--primary); display:block; margin-bottom:0.4rem; opacity:0.75;"></i>
           <div style="font-weight:600; font-size:0.85rem; color:var(--text);">Click or drag & drop a video</div>
           <div style="font-size:0.72rem; color:var(--muted); margin-top:0.2rem;">MP4 · MOV · AVI · MKV · WEBM · FLV · WMV · M4V</div>
         </div>
@@ -737,7 +751,7 @@
       <div class="panel-body">
         <!-- Standard image preview -->
         <div id="inputPrevWrap" class="prev-wrap">
-          <div class="prev-ph"><i class="bi bi-image-alt"></i><p>Upload an image to get started</p></div>
+          <div class="prev-ph"><i class="bi bi-film idle-icon" style="font-size:3rem; opacity:0.2;"></i><p>Drop a video to get started</p></div>
         </div>
         <!-- Crop canvas (shown only in crop mode) -->
         <div id="cropCanvasWrap" style="display:none; overflow:auto;">
