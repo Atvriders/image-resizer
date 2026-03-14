@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Image Studio</title>
+  <title>Editor</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
   <style>
     :root {
@@ -292,7 +292,7 @@
 <nav class="nav">
   <a class="nav-brand" href="#">
     <div class="icon-wrap"><i class="bi bi-layers-fill"></i></div>
-    Image Studio
+    Editor
   </a>
   <span class="nav-tag"><i class="bi bi-shield-lock me-1"></i>Private — never uploaded to third-party servers</span>
 </nav>
@@ -311,9 +311,9 @@
         <div id="dropzone" onclick="fileInput.click()">
           <i class="bi bi-cloud-arrow-up dz-icon"></i>
           <div class="dz-title">Click or drag & drop an image</div>
-          <div class="dz-sub">PNG · JPG · GIF · WEBP · BMP · TIFF &nbsp;·&nbsp; No file size limit</div>
+          <div class="dz-sub">Images: PNG · JPG · GIF · WEBP · BMP · TIFF &nbsp;·&nbsp; Video: MP4 · MOV · AVI · MKV · WEBM &nbsp;·&nbsp; No size limit</div>
         </div>
-        <input type="file" id="fileInput" accept="image/*" style="display:none"/>
+        <input type="file" id="fileInput" accept="image/*,video/*,.mkv,.flv,.wmv,.avi,.ogv,.mpeg,.mpg" style="display:none"/>
 
         <!-- File info (compact after upload) -->
         <div id="fileBar">
@@ -893,7 +893,25 @@ function updatePctPreview() {
 // ═══════════════════════════════════════════════
 // FILE UPLOAD
 // ═══════════════════════════════════════════════
+function isVideoFile(file) {
+  return file.type.startsWith('video/') ||
+    /\.(mp4|webm|mov|avi|mkv|flv|wmv|m4v|ogv|mpeg|mpg)$/i.test(file.name);
+}
+
 async function handleFile(file) {
+  if (isVideoFile(file)) {
+    // Switch to Video→GIF tab and hand off
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    const vBtn = document.querySelector('.tab-btn[data-tab="videogif"]');
+    vBtn.classList.add('active');
+    document.getElementById('pane-videogif').classList.add('active');
+    // Reset crop/standard panel display
+    cropCanvasWrap.style.display = 'none';
+    inputPrevWrap.style.display = 'flex';
+    setVideoFile(file);
+    return;
+  }
   showErr(uploadErr, '');
   upbar.classList.add('show'); upbarFill.style.width = '0%';
   dropzone.style.display = 'none';
@@ -1500,7 +1518,7 @@ function setVideoFile(file) {
   document.getElementById('videoFileName').textContent = file.name;
   document.getElementById('videoFileSize').textContent = humanSize(file.size);
   document.getElementById('videoFileBar').style.display = 'flex';
-  videoDrop.style.display = 'none';
+  document.getElementById('videoDrop').style.display = 'none';
   document.getElementById('videogifBtn').disabled = false;
   showErr(document.getElementById('videogifErr'), '');
 }
