@@ -29,5 +29,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/image-resizer:latest
-            ghcr.io/${{ github.repository_owner }}/image-resizer:${{ github.sha }}
+            ghcr.io/atvriders/image-resizer:latest
+            ghcr.io/atvriders/image-resizer:${{ github.sha }}
