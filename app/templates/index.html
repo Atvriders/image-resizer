@@ -746,7 +746,7 @@
   <div style="display:flex; flex-direction:column; gap:0.75rem;">
 
     <!-- Input / Crop Preview -->
-    <div class="panel">
+    <div class="panel" id="previewPanel">
       <div class="panel-head" id="inputPanelHead"><i class="bi bi-image"></i><span id="inputPanelTitle">Image Preview</span></div>
       <div class="panel-body">
         <!-- Standard image preview -->
@@ -860,7 +860,13 @@ document.getElementById('tabBar').addEventListener('click', e => {
   inputPrevWrap.style.display = isCrop ? 'none' : 'flex';
   inputPanelTitle.textContent = isCrop ? 'Crop — drag to select region' : 'Current Image';
 
-  if (isCrop && currentFile) initCropCanvas();
+  // Show input panel for crop (needs canvas); hide it if a result is already visible
+  if (isCrop && currentFile) {
+    document.getElementById('previewPanel').style.display = '';
+    initCropCanvas();
+  } else if (!isCrop && resultPanel.style.display !== 'none') {
+    document.getElementById('previewPanel').style.display = 'none';
+  }
   updateEffectPreview();
 });
 
@@ -1017,6 +1023,7 @@ function showDZ() {
 }
 
 function showInputPreview(src, w, h, size, fmt) {
+  document.getElementById('previewPanel').style.display = '';
   const img = document.createElement('img');
   img.src = src;
   img.alt = 'Current image';
@@ -1066,6 +1073,8 @@ function resetToOriginal() {
   updatePctPreview(); updateWorkStrip();
   if (curPreviewURL) { URL.revokeObjectURL(curPreviewURL); curPreviewURL = null; }
   showInputPreview(fileThumbnail.src, origW, origH, fbSize.textContent, curFmt);
+  resultPanel.style.display = 'none';
+  if (resultBlobURL) { URL.revokeObjectURL(resultBlobURL); resultBlobURL = null; }
   const activeTab = document.querySelector('.tab-btn.active');
   if (activeTab && activeTab.dataset.tab === 'crop') initCropCanvas();
 }
@@ -1109,12 +1118,12 @@ async function runOp(endpoint, formData, btnId, errId) {
     rW.value = curW; rH.value = curH;
     updatePctPreview();
 
-    // Show updated input preview
+    // Show updated input preview (crop tab needs canvas, otherwise hide input panel)
     const activeTab = document.querySelector('.tab-btn.active');
-    if (!activeTab || activeTab.dataset.tab !== 'crop') {
-      showInputPreview(curPreviewURL, curW, curH, sz, fmt);
-    } else {
+    if (activeTab && activeTab.dataset.tab === 'crop') {
       initCropCanvas();
+    } else {
+      document.getElementById('previewPanel').style.display = 'none';
     }
 
     // Show result
@@ -1521,9 +1530,11 @@ async function applyResult(res) {
   updateWorkStrip(); rW.value = curW; rH.value = curH; updatePctPreview();
 
   const activeTab = document.querySelector('.tab-btn.active');
-  if (!activeTab || activeTab.dataset.tab !== 'crop') {
-    showInputPreview(curPreviewURL, curW, curH, sz, fmt);
-  } else { initCropCanvas(); }
+  if (activeTab && activeTab.dataset.tab === 'crop') {
+    initCropCanvas();
+  } else {
+    document.getElementById('previewPanel').style.display = 'none';
+  }
 
   const rImg = document.createElement('img');
   rImg.src = resultBlobURL; rImg.alt = 'Result';
@@ -1659,8 +1670,8 @@ document.getElementById('videogifBtn').addEventListener('click', async () => {
     curW = w || curW; curH = h || curH; curFmt = 'GIF';
     updateWorkStrip(); rW.value = curW; rH.value = curH; updatePctPreview();
 
-    // Show in input panel
-    showInputPreview(curPreviewURL, curW, curH, sz, 'GIF');
+    // Hide input panel — result panel takes over
+    document.getElementById('previewPanel').style.display = 'none';
 
     // Show result
     const rImg = document.createElement('img');
