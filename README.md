@@ -21,6 +21,7 @@ A self-hosted video-to-GIF and image editing web app. Drop in a video and conver
 - **Optimize** — quality slider, optional max dimensions, format selection
 - **Convert** — JPEG, PNG, WEBP, GIF, BMP, TIFF
 - Operations chain — each result becomes the input for the next tool
+- Animated GIF support — all operations preserve animation across every frame
 - No file size limit
 
 ## Quick Start (Docker)
@@ -48,7 +49,7 @@ docker compose up -d
 http://localhost:5000
 ```
 
-## Running from Source
+## Running from Source (Docker)
 
 ```bash
 git clone https://github.com/Atvriders/image-resizer.git
@@ -66,3 +67,43 @@ docker compose up -d --build
 | Server | Gunicorn |
 | Frontend | Vanilla JS + Bootstrap Icons |
 | Container | Docker |
+
+## Running without Docker
+
+**Requirements:** Python 3.12+, ffmpeg
+
+**1. Install ffmpeg:**
+
+```bash
+# Ubuntu / Debian
+sudo apt install ffmpeg
+
+# macOS (Homebrew)
+brew install ffmpeg
+
+# Windows — download from https://ffmpeg.org/download.html and add to PATH
+```
+
+**2. Clone the repo and install Python dependencies:**
+
+```bash
+git clone https://github.com/Atvriders/image-resizer.git
+cd image-resizer
+pip install -r app/requirements.txt
+```
+
+**3. Run the app:**
+
+```bash
+# Development server
+python app/app.py
+
+# Production (recommended)
+gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 600 --chdir app app:app
+```
+
+**4. Open your browser:**
+
+```
+http://localhost:5000
+```
