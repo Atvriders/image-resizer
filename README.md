@@ -1,20 +1,27 @@
-# Image Studio
+# Editor
 
-A self-hosted image editing web app — crop, resize, rotate, apply effects, optimize, and convert images. Runs entirely in Docker with no external dependencies and no file size limit.
+A self-hosted video-to-GIF and image editing web app. Drop in a video and convert it to a GIF, then resize, crop, rotate, apply effects, optimize, and convert — all in the browser, all on your own server.
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue) ![Flask](https://img.shields.io/badge/Flask-3.1-green) ![Docker](https://img.shields.io/badge/Docker-ready-blue)
 
 ## Features
 
-- **Resize** — by pixel dimensions or percentage (1%–500%), aspect ratio lock, 5 resampling methods
+### Video → GIF
+- Supports MP4, MOV, AVI, MKV, WEBM, FLV, WMV, M4V and more
+- Keeps original resolution by default — or pick from presets (4K, 1440p, 1080p, 720p, 480p, 360p, 240p) or set a custom width
+- Control start time, duration (up to 60s), frame rate, and loop count
+- High-quality output using ffmpeg's two-pass palette (palettegen + paletteuse)
+- Auto-detects video dimensions and length on upload
+
+### Image Editing (unlocked after a GIF is created or an image is uploaded)
+- **Resize** — pixel dimensions or percentage (1%–500%), aspect ratio lock, 5 resampling methods
 - **Crop** — interactive canvas with drag-to-select, corner/edge handles, rule-of-thirds grid, 7 aspect ratio presets
-- **Rotate & Flip** — 90°/180° presets, flip horizontal/vertical, custom angle with canvas expand option
-- **Effects** — live preview while adjusting: brightness, contrast, saturation, sharpness + filters (grayscale, sepia, invert, blur, sharpen, emboss, edge detect, smooth)
-- **Optimize** — compress with quality control, optional max dimensions, format selection
-- **Convert** — convert between JPEG, PNG, WEBP, GIF, BMP, TIFF
-- **Chainable** — each operation's output becomes the input for the next
-- Upload via click or drag & drop — **no file size limit**
-- Stateless — nothing written to disk, images never leave your server
+- **Rotate & Flip** — 90°/180° quick presets, flip H/V, custom angle
+- **Effects** — live preview: brightness, contrast, saturation, sharpness + grayscale, sepia, invert, blur, sharpen, emboss, edge detect, smooth
+- **Optimize** — quality slider, optional max dimensions, format selection
+- **Convert** — JPEG, PNG, WEBP, GIF, BMP, TIFF
+- Operations chain — each result becomes the input for the next tool
+- No file size limit
 
 ## Quick Start (Docker)
 
@@ -22,7 +29,7 @@ A self-hosted image editing web app — crop, resize, rotate, apply effects, opt
 
 ```yaml
 services:
-  image-studio:
+  editor:
     image: ghcr.io/atvriders/image-resizer:latest
     ports:
       - "5000:5000"
@@ -54,6 +61,7 @@ docker compose up -d --build
 | Layer | Technology |
 |---|---|
 | Backend | Python 3.12 + Flask 3.1 |
+| Video processing | ffmpeg |
 | Image processing | Pillow 11 |
 | Server | Gunicorn |
 | Frontend | Vanilla JS + Bootstrap Icons |
