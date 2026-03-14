@@ -685,21 +685,31 @@
           <div style="display:flex; justify-content:space-between; font-size:0.68rem; color:var(--muted);"><span>Smaller file</span><span>Smoother</span></div>
         </div>
 
-        <div class="row2 mb2">
-          <div>
-            <label class="lbl">Width (px)</label>
-            <input type="number" id="vgWidth" min="50" max="1920" step="10" value="480"/>
-          </div>
-          <div>
-            <label class="lbl">Loop</label>
-            <select id="vgLoop">
-              <option value="0">Infinite</option>
-              <option value="-1">Play once</option>
-              <option value="2">2×</option>
-              <option value="3">3×</option>
-              <option value="5">5×</option>
-            </select>
-          </div>
+        <div class="mb2">
+          <label class="lbl">Resolution</label>
+          <select id="vgResPreset" style="margin-bottom:0.4rem;">
+            <option value="0">Original (keep source resolution)</option>
+            <option value="3840">4K — 3840px wide</option>
+            <option value="2560">1440p — 2560px wide</option>
+            <option value="1920">1080p — 1920px wide</option>
+            <option value="1280">720p — 1280px wide</option>
+            <option value="854">480p — 854px wide</option>
+            <option value="640">360p — 640px wide</option>
+            <option value="426">240p — 426px wide</option>
+            <option value="custom">Custom width…</option>
+          </select>
+          <input type="number" id="vgWidth" min="50" max="7680" step="2" placeholder="Custom width (px)" style="display:none;"/>
+        </div>
+
+        <div class="mb2">
+          <label class="lbl">Loop</label>
+          <select id="vgLoop">
+            <option value="0">Infinite</option>
+            <option value="-1">Play once</option>
+            <option value="2">2×</option>
+            <option value="3">3×</option>
+            <option value="5">5×</option>
+          </select>
         </div>
 
         <div class="err-box" id="videogifErr"></div>
@@ -1519,7 +1529,22 @@ videoDrop.addEventListener('drop', e => {
 });
 videoInput.addEventListener('change', () => { if (videoInput.files[0]) setVideoFile(videoInput.files[0]); });
 
-function setVideoFile(file) {
+let videoOrigWidth = 0;
+
+function getVideoDimensions(file) {
+  return new Promise(resolve => {
+    const v = document.createElement('video');
+    v.preload = 'metadata';
+    v.onloadedmetadata = () => {
+      resolve({ w: v.videoWidth, h: v.videoHeight, dur: v.duration });
+      URL.revokeObjectURL(v.src);
+    };
+    v.onerror = () => resolve({ w: 0, h: 0, dur: 0 });
+    v.src = URL.createObjectURL(file);
+  });
+}
+
+async function setVideoFile(file) {
   videoFile = file;
   document.getElementById('videoFileName').textContent = file.name;
   document.getElementById('videoFileSize').textContent = humanSize(file.size);
@@ -1527,6 +1552,23 @@ function setVideoFile(file) {
   document.getElementById('videoDrop').style.display = 'none';
   document.getElementById('videogifBtn').disabled = false;
   showErr(document.getElementById('videogifErr'), '');
+
+  // Detect dimensions and auto-fill fields
+  const { w, h, dur } = await getVideoDimensions(file);
+  videoOrigWidth = w;
+  if (dur > 0) {
+    const maxDur = Math.min(Math.ceil(dur), 60);
+    document.getElementById('vgDuration').value = Math.min(5, maxDur);
+    document.getElementById('vgDuration').max = maxDur;
+  }
+  // Default to original resolution
+  document.getElementById('vgResPreset').value = '0';
+  document.getElementById('vgWidth').style.display = 'none';
+  if (w) {
+    // Update the "Original" option label with actual dimensions
+    document.querySelector('#vgResPreset option[value="0"]').textContent =
+      `Original (${w} × ${h})`;
+  }
 }
 
 function humanSize(n) {
@@ -1534,6 +1576,12 @@ function humanSize(n) {
   if (n < 1048576) return (n/1024).toFixed(1) + ' KB';
   return (n/1048576).toFixed(2) + ' MB';
 }
+
+document.getElementById('vgResPreset').addEventListener('change', function() {
+  const custom = this.value === 'custom';
+  document.getElementById('vgWidth').style.display = custom ? 'block' : 'none';
+  if (custom) document.getElementById('vgWidth').focus();
+});
 
 document.getElementById('vgFps').addEventListener('input', function() {
   document.getElementById('vgFpsV').textContent = this.value;
@@ -1548,10 +1596,12 @@ document.getElementById('videogifBtn').addEventListener('click', async () => {
 
   const fd = new FormData();
   fd.append('file', videoFile);
+  const preset = document.getElementById('vgResPreset').value;
+  const width = preset === 'custom' ? (parseInt(document.getElementById('vgWidth').value) || 0) : parseInt(preset);
   fd.append('start',    document.getElementById('vgStart').value);
   fd.append('duration', document.getElementById('vgDuration').value);
   fd.append('fps',      document.getElementById('vgFps').value);
-  fd.append('width',    document.getElementById('vgWidth').value);
+  fd.append('width',    width);
   fd.append('loop',     document.getElementById('vgLoop').value);
 
   try {

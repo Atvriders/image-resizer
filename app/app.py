@@ -367,7 +367,9 @@ def video_to_gif():
     start   = max(0, float(request.form.get('start', 0)))
     duration = min(max(0.1, float(request.form.get('duration', 5))), 60)
     fps     = min(max(1, int(request.form.get('fps', 10))), 30)
-    width   = min(max(50, int(request.form.get('width', 480))), 1920)
+    width   = int(request.form.get('width', 0))  # 0 = keep original resolution
+    if width != 0:
+        width = min(max(50, width), 7680)
     loop    = int(request.form.get('loop', 0))   # 0=infinite, -1=once, n=n times
 
     tmpdir = tempfile.mkdtemp()
@@ -377,9 +379,10 @@ def video_to_gif():
         file.save(in_path)
 
         # High-quality GIF via palette trick
+        scale = f"scale={width}:-2:flags=lanczos," if width > 0 else ""
         vf = (
             f"fps={fps},"
-            f"scale={width}:-2:flags=lanczos,"
+            f"{scale}"
             f"split[s0][s1];"
             f"[s0]palettegen=max_colors=256:stats_mode=diff[p];"
             f"[s1][p]paletteuse=dither=bayer:bayer_scale=5"
