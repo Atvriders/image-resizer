@@ -1,20 +1,20 @@
-# Image Resizer
+# Image Studio
 
-A self-hosted web app for resizing images — similar to ezgif.com/resize. Runs entirely in Docker with no external dependencies.
+A self-hosted image editing web app — crop, resize, rotate, apply effects, optimize, and convert images. Runs entirely in Docker with no external dependencies and no file size limit.
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue) ![Flask](https://img.shields.io/badge/Flask-3.1-green) ![Docker](https://img.shields.io/badge/Docker-ready-blue)
 
 ## Features
 
-- Upload images via click or drag & drop
-- Resize by **pixel dimensions** or **percentage** (1%–500%)
-- **Aspect ratio lock** — changing width auto-calculates height and vice versa
-- 4 resampling methods: Lanczos, Bicubic, Bilinear, Nearest Neighbor
-- Side-by-side preview of original and resized image
-- Shows file size and dimensions before and after
-- One-click download of the resized image
-- Supports PNG, JPG, GIF, WEBP, BMP, TIFF (up to 50 MB)
-- Stateless — nothing written to disk
+- **Resize** — by pixel dimensions or percentage (1%–500%), aspect ratio lock, 5 resampling methods
+- **Crop** — interactive canvas with drag-to-select, corner/edge handles, rule-of-thirds grid, 7 aspect ratio presets
+- **Rotate & Flip** — 90°/180° presets, flip horizontal/vertical, custom angle with canvas expand option
+- **Effects** — live preview while adjusting: brightness, contrast, saturation, sharpness + filters (grayscale, sepia, invert, blur, sharpen, emboss, edge detect, smooth)
+- **Optimize** — compress with quality control, optional max dimensions, format selection
+- **Convert** — convert between JPEG, PNG, WEBP, GIF, BMP, TIFF
+- **Chainable** — each operation's output becomes the input for the next
+- Upload via click or drag & drop — **no file size limit**
+- Stateless — nothing written to disk, images never leave your server
 
 ## Quick Start (Docker)
 
@@ -22,7 +22,7 @@ A self-hosted web app for resizing images — similar to ezgif.com/resize. Runs 
 
 ```yaml
 services:
-  image-resizer:
+  image-studio:
     image: ghcr.io/atvriders/image-resizer:latest
     ports:
       - "5000:5000"
@@ -41,17 +41,6 @@ docker compose up -d
 http://localhost:5000
 ```
 
-Or replace `localhost` with your server's IP address.
-
-## Usage
-
-1. **Upload** — click the upload area or drag an image onto it
-2. **Choose resize mode** — switch between Pixels and Percentage
-3. **Set dimensions** — enter width/height (use the link icon to lock aspect ratio) or drag the percentage slider
-4. **Pick a resampling method** — Lanczos gives the best quality
-5. **Click Resize Image**
-6. **Download** — click the download button to save the result
-
 ## Running from Source
 
 ```bash
@@ -67,5 +56,5 @@ docker compose up -d --build
 | Backend | Python 3.12 + Flask 3.1 |
 | Image processing | Pillow 11 |
 | Server | Gunicorn |
-| Frontend | Bootstrap 5 + vanilla JS |
+| Frontend | Vanilla JS + Bootstrap Icons |
 | Container | Docker |
